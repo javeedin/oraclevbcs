@@ -73,7 +73,9 @@
         "model": "",
         "modelLabel": "",
         "remember": true,
-        "useData": true
+        "useData": true,
+        "desktop": false,
+        "keyStore": "this browser"
       }
     },
     "apForm": {
@@ -103,6 +105,27 @@
     "apTesting": {
       "type": "boolean",
       "defaultValue": false
+    },
+    "pendingCount": {
+      "type": "number",
+      "defaultValue": 0
+    },
+    "toasts": {
+      "type": "object[]",
+      "defaultValue": []
+    },
+    "apOpen": {
+      "type": "boolean",
+      "defaultValue": false
+    },
+    "desktop": {
+      "type": "object",
+      "defaultValue": {
+        "isDesktop": false,
+        "version": "",
+        "platform": "",
+        "source": ""
+      }
     }
   },
   "metadata": {},
@@ -274,6 +297,56 @@
           "parameters": {
             "action": "close"
           }
+        }
+      ]
+    },
+    "bridgeCounts": {
+      "chains": [
+        {
+          "chain": "shellBridgeChain",
+          "parameters": {
+            "type": "counts",
+            "detail": "{{ $event.detail }}"
+          }
+        }
+      ]
+    },
+    "bridgeToast": {
+      "chains": [
+        {
+          "chain": "shellBridgeChain",
+          "parameters": {
+            "type": "toast",
+            "detail": "{{ $event.detail }}"
+          }
+        }
+      ]
+    },
+    "bridgeCommand": {
+      "chains": [
+        {
+          "chain": "shellBridgeChain",
+          "parameters": {
+            "type": "command",
+            "detail": "{{ $event.detail }}"
+          }
+        }
+      ]
+    },
+    "bridgeAsk": {
+      "chains": [
+        {
+          "chain": "autopilotSendChain",
+          "parameters": {
+            "ask": "{{ $event.detail }}"
+          }
+        }
+      ]
+    },
+    "downloadDesktop": {
+      "chains": [
+        {
+          "chain": "downloadDesktopChain"
         }
       ]
     }

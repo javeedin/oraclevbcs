@@ -23,8 +23,8 @@ define([
     async run(context, { prompt } = {}) {
       const { $application } = context;
 
-      $application.variables.autopilotQueued = prompt || '';
-      $application.variables.autopilotOpen = true;
+      // The shell opens the panel and asks (through #mxBridge, see app-flow.js).
+      $application.functions.openAutopilot(prompt || '');
     }
   }
 

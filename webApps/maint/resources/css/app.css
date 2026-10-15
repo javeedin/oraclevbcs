@@ -1045,6 +1045,12 @@ h3,
     padding-inline-end: 0;
   }
 }
+@media (max-width: 1023px) {
+  /* Phones and small tablets don't run the Windows desktop app. */
+  .mx-appbar-download {
+    display: none;
+  }
+}
 @media (max-width: 599px) {
   .mx-facts,
   .mx-facts--4 {

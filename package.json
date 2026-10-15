@@ -11,9 +11,12 @@
         "serve": "npm run build && grunt vb-serve:webApps/maint --port=8888 --open",
         "serve:cdn": "npm run serve",
         "build:exchange": "grunt vb-clean vb-process-local",
+        "build:desktop": "npm run build && node desktop/scripts/build-app.js",
+        "desktop": "npm --prefix desktop start",
+        "desktop:dist": "npm --prefix desktop run dist",
         "audit": "grunt vb-audit",
         "package": "grunt vb-process-local vb-package",
-        "lint": "eslint \"webApps/**/*.js\""
+        "lint": "eslint \"webApps/**/*.js\" \"desktop/**/*.js\" Gruntfile.js"
     },
     "devDependencies": {
         "grunt": "^1.4.1",

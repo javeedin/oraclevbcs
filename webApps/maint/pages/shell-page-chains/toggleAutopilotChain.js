@@ -18,9 +18,9 @@ define([
      * @param {boolean} params.open
      */
     async run(context, { open } = {}) {
-      const { $application } = context;
+      const { $page } = context;
 
-      $application.variables.autopilotOpen = open === true;
+      $page.variables.apOpen = open === true;
     }
   }
 

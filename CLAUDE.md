@@ -11,18 +11,25 @@ visual-application.json            VB 25.10 runtime, JET 18.1.4 - do not hand-ed
 settings/dependencies.json         oj-sp components available to the app (as in Oracle's Redwood starter)
 package.json, Gruntfile.js         grunt-vb-build 2510 tooling. Node 20. `npm run build`/`serve` build a copy in
                                    .local-src/ without component-dependencies (no Component Exchange locally).
+                                   `npm run build:desktop` also captures the built app for the desktop client.
+desktop/                           Electron desktop client (NOT part of the VB app, see desktop/README.md):
+                                   main.js, preload.js (window.mxDesktop), lib/server.js, lib/store.js,
+                                   scripts/build-app.js (fills desktop/app), scripts/selftest.js
+.github/workflows/desktop.yml      builds + smoke-tests the desktop client; on a v* tag publishes the
+                                   Windows installer as a GitHub release (Maintenance-Setup.exe)
 webApps/maint/
   index.html                       VB entry page
   app-flow.json                    requirejs paths/bundles for oj-sp on Oracle's CDN, app variables
-                                   (counts, messages, prefillEquipmentId, openRequestId, openRequestView,
-                                   autopilotOpen, autopilotQueued), CSS import
+                                   (counts, messages, prefillEquipmentId, openRequestId, openRequestView), CSS import
   app-flow.js                      define(['oj-sp/spectra-shell/config/config']) + sample data store,
-                                   workflow builder (requestWorkflow) and Auto Pilot (Claude API + tools)
+                                   workflow builder (requestWorkflow), shell bridge + desktop client
+                                   (DESKTOP, shellEvent) and Auto Pilot (Claude API + tools)
   settings/dependencies.json       oj-sp components this web app uses (must list every oj-sp-* tag)
-  pages/shell-page.*               oj-sp-pillar-theme, header, oj-sp-in-app-navigation, toasts, router,
+  pages/shell-page.*               oj-sp-pillar-theme, header (Download desktop app, Approvals (n)),
+                                   #mxBridge, oj-sp-in-app-navigation, toasts, router,
                                    Auto Pilot panel (oj-drawer-popup, modeless) and its settings dialog
   pages/shell-page-chains/         initShell, navigate, resetDemo, toggleAutopilot, autopilotSend,
-                                   autopilotSettings, newChat
+                                   autopilotSettings, newChat, shellBridge, downloadDesktop
   flows/<flow>/<flow>-flow.json    one flow per navigation item
   flows/<flow>/pages/<page>-page.{json,html,js} and <page>-page-chains/
   resources/css/app.css            typeface (--oj-html-font-family: Oracle Sans, then bundled Inter) and
@@ -61,8 +68,8 @@ User feedback: keep Home and Dashboard compact (no big cards, small charts ~12re
    flow with `Actions.navigateToPage(context, { page })` (openPageChain). The in-app navigation
    highlights itself from `$page.currentFlow`. To open one request on arrival, set
    `$application.variables.openRequestId` (and `openRequestView = 'workflow'`) before navigating to Requests
-   (goToChain takes `requestId` and `view`). To ask Auto Pilot from a page, set
-   `autopilotQueued` and `autopilotOpen`; the shell sends it when the panel opens.
+   (goToChain takes `requestId` and `view`). To ask Auto Pilot from a page, call
+   `$application.functions.openAutopilot(prompt)`; the shell opens the panel and asks.
 6. **Binding syntax:** `[[ ]]` one-way, `{{ }}` two-way. Page functions are `$functions.x()` in
    HTML and `$page.functions.x()` in chains; app functions are `$application.functions.x()` in both.
 7. **Every component used in HTML must be imported** in the page JSON `imports.components`.
@@ -79,8 +86,23 @@ User feedback: keep Home and Dashboard compact (no big cards, small charts ~12re
 11. **Auto Pilot** calls the Claude Messages API from the browser (`x-api-key`, `anthropic-version: 2023-06-01`,
     `anthropic-dangerous-direct-browser-access: true`). Tools are defined in `AP_TOOLS` and run in
     `apRunTool` against the store; only `create_draft_request` writes, and only drafts. Answers render
-    from markdown to blocks (`apBlocks`), never innerHTML. The key lives in localStorage (or memory).
-12. After any change run `npm run build` and fix errors before committing.
+    from markdown to blocks (`apBlocks`), never innerHTML. The key lives in localStorage (or memory);
+    in the desktop client it lives in the desktop app and the page never sees it (rule 13).
+12. **Shell bridge:** the header count, the toasts and the Auto Pilot panel are shell *page* variables
+    (`pendingCount`, `toasts`, `apOpen`) set by `shellBridgeChain` / `autopilotSendChain` from DOM events
+    that app-flow.js raises on `<span id="mxBridge">`: `counts()` raises `mxcounts`, `message()` raises
+    `mxtoast`, `openAutopilot()` raises `mxask`, desktop tray/menu commands raise `mxcommand`. So call
+    `counts()` after every data change and build toasts with `message()`. Don't bind shell HTML to
+    `$application.variables` that flow pages change: the header showed "Approvals (0)" that way.
+    Bridge event names are lower case (`on-mxcounts`), so the attribute maps to the event as is.
+13. **Desktop client** (`desktop/`, Electron): `window.mxDesktop` exists only there (`DESKTOP` in
+    app-flow.js). It keeps the Claude key in OS secure storage and makes the Claude call in the main
+    process (`apCall` uses `mxDesktop.claude()`), shows the pending count on the tray and taskbar, notifies
+    when Auto Pilot answers in the background, and sends tray/menu/shortcut commands. Keep preload.js,
+    main.js (IPC checks) and app-flow.js in step. The header "Download desktop app" button (hidden in the
+    desktop app) opens `releases/latest/download/Maintenance-Setup.exe` on GitHub.
+14. After any change run `npm run build` and fix errors before committing; `npm run lint` covers
+    webApps and desktop. Desktop releases: bump `desktop/package.json` version, tag `v<version>`, push.
 
 ## Data
 

@@ -14,8 +14,10 @@ define([
    *  - the Send button (no parameters): sends what is typed;
    *  - the prompt's keydown (key, ctrl): sends on Ctrl+Enter, ignores other keys;
    *  - a suggestion (text);
-   *  - the panel opening (opened): sends a question another page queued in
-   *    $application.variables.autopilotQueued (Home's "Ask Auto Pilot").
+   *  - the panel opening (opened): refreshes the settings and focuses the prompt;
+   *  - #mxBridge mxask (ask): $application.functions.openAutopilot(prompt) from any page
+   *    (Home's "Ask Auto Pilot") or the desktop app's tray and shortcut: opens the panel
+   *    and, with a prompt, asks it straight away.
    */
   class autopilotSendChain extends ActionChain {
 
@@ -26,20 +28,24 @@ define([
      * @param {string} [params.key]       key pressed in the prompt
      * @param {boolean} [params.ctrl]     Ctrl or Cmd held
      * @param {boolean} [params.opened]   the panel's new opened state
+     * @param {Object} [params.ask]       { prompt } from #mxBridge
      */
-    async run(context, { text, key, ctrl, opened } = {}) {
+    async run(context, { text, key, ctrl, opened, ask } = {}) {
       const { $page, $application } = context;
 
       let prompt = typeof text === 'string' ? text : '';
       if (opened !== undefined) {
-        if (opened !== true) {
-          return;
+        if (opened === true) {
+          $page.variables.apSettings = $application.functions.autopilotSettings();
+          $page.functions.focusPrompt();
         }
-        $page.variables.apSettings = $application.functions.autopilotSettings();
+        return;
+      }
+      if (ask !== undefined) {
+        $page.variables.apOpen = true;
         $page.functions.focusPrompt();
-        prompt = $application.variables.autopilotQueued || '';
-        $application.variables.autopilotQueued = '';
-        if (!prompt) {
+        prompt = ask && typeof ask.prompt === 'string' ? ask.prompt : '';
+        if (!prompt.trim()) {
           return;
         }
       } else if (key !== undefined && !(key === 'Enter' && ctrl === true)) {
@@ -80,6 +86,8 @@ define([
         const result = await $application.functions.askAutopilot($page.variables.apHistory, prompt);
         $page.variables.apHistory = result.history;
         $page.variables.apChat = $page.variables.apChat.concat([$page.functions.answerMessage(result)]);
+        // Desktop app in the background: a notification that opens the panel.
+        $application.functions.notifyDesktop('Auto Pilot answered', result.text, { command: 'autopilot' });
         if (result.changed) {
           $application.variables.counts = $application.functions.counts();
           $application.variables.messages = $application.functions.message(

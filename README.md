@@ -22,8 +22,8 @@ backend is needed.
 | Work orders | Smart search page | Board with Scheduled, In progress and Completed lanes; start and complete work |
 
 The shell is the same as VB's Redwood starter: `oj-sp-pillar-theme` around everything and
-**`oj-sp-in-app-navigation`** to move between the six areas. The header has **Auto Pilot** and
-**Settings**.
+**`oj-sp-in-app-navigation`** to move between the six areas. The header has **Download desktop
+app**, **Approvals (n)**, **Auto Pilot** and **Settings**.
 
 **Typeface:** Redwood's own typeface is Oracle Sans, which Oracle doesn't publish for download. The
 app uses it when it's installed on the computer; otherwise it uses **Inter** (bundled in
@@ -61,6 +61,34 @@ off) and is sent only to `api.anthropic.com`. That is fine for a demo. For produ
 from a server-side proxy (ORDS, OIC or another backend) so the key never reaches the browser.
 In VB Studio, if Auto Pilot says it cannot reach api.anthropic.com, the instance's security policy
 is blocking browser calls to it; the server-side proxy is then the way to go.
+
+### Desktop app (Windows)
+
+**Download desktop app** in the header downloads `Maintenance-Setup.exe` from the latest
+[GitHub release](https://github.com/javeedin/oraclevbcs/releases/latest). It installs for the
+current Windows user (no admin rights) and adds Start menu and desktop shortcuts. The installer is
+not code-signed yet, so Windows SmartScreen may say "Windows protected your PC": choose **More
+info**, then **Run anyway**.
+
+The desktop app is the same Maintenance app in its own window (Electron), plus:
+
+| | Browser | Desktop app |
+|---|---|---|
+| Claude API key | this browser's storage | Windows secure storage (DPAPI); the page never sees it, the desktop app calls Claude itself |
+| Approvals waiting | header | header, taskbar badge and tray tooltip |
+| Auto Pilot | header button | also **Ctrl+Shift+Space** from anywhere, and the tray menu |
+| When Auto Pilot answers while you're in another window | - | a Windows notification; click it to go back |
+| Menus | - | Go (Ctrl+1 … Ctrl+6), tray menu with counts, Help > Check for updates |
+| Updates | - | automatic, from new GitHub releases |
+
+It still needs the internet: the Redwood templates and the VB runtime load from Oracle's CDN.
+By default it shows the app bundled in it, with its own sample data. To use the app hosted in VB
+Studio instead, open **File > Desktop settings…** and paste its URL into `serverUrl`.
+
+**Releasing a new version:** change `version` in `desktop/package.json`, commit, then
+`git tag v1.0.1 && git push origin v1.0.1`. The **Desktop app** workflow builds the VB app,
+smoke-tests the desktop app with it, and publishes the installer as a release; the header button and
+the installed apps' updates pick it up. Details in [desktop/README.md](desktop/README.md).
 
 **Approval rules** (worked out per request):
 1. Maintenance supervisor approves every request.
@@ -116,6 +144,15 @@ In VS Code: **Terminal > Run Task > VB: install build tools**, then **VB: local 
 
 **Reset sample data** in the header starts again.
 
+### Run the desktop app from the sources
+
+```powershell
+npm run build:desktop        # builds the VB app and copies it, as vb-serve serves it, into desktop\app
+cd desktop
+npm install
+npm start                    # or: npm run dist  -> desktop\dist\Maintenance-Setup.exe
+```
+
 ## 2. Bring it into VB Studio
 
 Import the zip as a new workspace (or push this branch to the workspace's repository), open the
@@ -147,6 +184,8 @@ webApps/maint/
   flows/workorders/               work-orders page
   resources/css/app.css           typeface + layout inside the templates (mx- classes, Redwood variables)
   resources/fonts/                Inter variable font (latin, latin-ext) and its licence
+desktop/                          desktop client (Electron): main.js, preload.js, lib/, scripts/, assets/
+.github/workflows/desktop.yml     builds, smoke-tests and releases the desktop client
 ```
 
 Each page is `<name>-page.json` (variables, listeners, component imports), `<name>-page.html`,
@@ -192,6 +231,12 @@ The Redwood templates come from Oracle's CDN and can only render in a browser, s
   tool_use / tool_result pairing: tool lookups, saving a draft, a bad key, Ctrl+Enter, and a
   question queued from Home;
 - the full journey (raise, three approvals, work order, complete; send drafts; reject with and
-  without a reason; raise from an asset) was run through the real chains.
+  without a reason; raise from an asset) was run through the real chains;
+- the header count, toasts and "Ask Auto Pilot" go through the shell bridge and were checked after
+  every change, in the browser and with the desktop client's `window.mxDesktop` (key in the desktop
+  app, Claude calls through it, badge counts, notifications, tray commands);
+- the desktop client was run under Xvfb against a mock Claude API (bridge, key storage, Claude call
+  from the main process, commands) and packaged with electron-builder; the workflow repeats this with
+  the real VB app on every push.
 
 If anything shows an error in the browser, the console (F12) has the details.

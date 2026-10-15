@@ -1,0 +1,86 @@
+{
+  "name": "maintenance-desktop",
+  "productName": "Maintenance",
+  "version": "1.0.0",
+  "description": "Desktop client for the Maintenance module (Oracle Visual Builder, Redwood)",
+  "author": "javeedin",
+  "license": "UNLICENSED",
+  "private": true,
+  "main": "main.js",
+  "homepage": "https://github.com/javeedin/oraclevbcs",
+  "scripts": {
+    "app": "cd .. && npm run build:desktop",
+    "start": "electron .",
+    "dist": "electron-builder --win --publish never",
+    "dist:dir": "electron-builder --dir --publish never",
+    "release": "electron-builder --win --publish always"
+  },
+  "dependencies": {
+    "electron-updater": "6.8.9"
+  },
+  "devDependencies": {
+    "electron": "44.5.1",
+    "electron-builder": "26.15.3"
+  },
+  "build": {
+    "appId": "com.javeedin.maintenance",
+    "productName": "Maintenance",
+    "copyright": "Sample application",
+    "directories": {
+      "output": "dist",
+      "buildResources": "assets"
+    },
+    "files": [
+      "main.js",
+      "preload.js",
+      "lib/**",
+      "assets/**",
+      "app/**",
+      "package.json"
+    ],
+    "asar": true,
+    "win": {
+      "target": [
+        {
+          "target": "nsis",
+          "arch": [
+            "x64"
+          ]
+        }
+      ],
+      "icon": "assets/icon.ico",
+      "artifactName": "Maintenance-Setup.${ext}"
+    },
+    "nsis": {
+      "oneClick": false,
+      "perMachine": false,
+      "allowToChangeInstallationDirectory": true,
+      "createDesktopShortcut": true,
+      "createStartMenuShortcut": true,
+      "shortcutName": "Maintenance",
+      "installerIcon": "assets/icon.ico",
+      "uninstallerIcon": "assets/icon.ico",
+      "deleteAppDataOnUninstall": false
+    },
+    "mac": {
+      "target": "dmg",
+      "icon": "assets/icon.png",
+      "category": "public.app-category.business",
+      "artifactName": "Maintenance-mac.${ext}"
+    },
+    "linux": {
+      "target": "AppImage",
+      "icon": "assets/icon.png",
+      "category": "Office",
+      "artifactName": "Maintenance-linux.${ext}"
+    },
+    "publish": [
+      {
+        "provider": "github",
+        "owner": "javeedin",
+        "repo": "oraclevbcs",
+        "releaseType": "release"
+      }
+    ]
+  }
+}

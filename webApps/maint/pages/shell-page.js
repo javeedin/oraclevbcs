@@ -74,6 +74,13 @@ define([], () => {
       }
     }
 
+    /** Opens a link in a new tab (in the desktop app: the default browser). */
+    openUrl(url) {
+      if (/^https:\/\//.test(String(url || ''))) {
+        window.open(url, '_blank', 'noopener');
+      }
+    }
+
     closeDialog(id) {
       const dialog = document.getElementById(id);
       if (dialog && typeof dialog.close === 'function') {

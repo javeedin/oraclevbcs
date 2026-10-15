@@ -6,3 +6,7 @@ build/
 # Keep REST Client secrets out of Git
 api-tests/*.local.http
 .local-src/
+# Desktop client: built app, installers, dependencies
+desktop/app/
+desktop/dist/
+desktop/node_modules/

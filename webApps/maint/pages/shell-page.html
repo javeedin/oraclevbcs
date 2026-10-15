@@ -16,9 +16,22 @@
         </button>
         <span class="oj-badge oj-badge-subtle oj-badge-info mx-appbar-tag">Sample data</span>
         <span class="mx-appbar-spacer"></span>
+        <!-- Bridge: the app module raises mxcounts / mxtoast / mxask / mxcommand here (see app-flow.js) -->
+        <span id="mxBridge" hidden="hidden"
+          on-mxcounts="[[$listeners.bridgeCounts]]"
+          on-mxtoast="[[$listeners.bridgeToast]]"
+          on-mxask="[[$listeners.bridgeAsk]]"
+          on-mxcommand="[[$listeners.bridgeCommand]]"></span>
+        <oj-bind-if test="[[ !$variables.desktop.isDesktop ]]">
+          <oj-button class="mx-appbar-download" chroming="borderless" on-oj-action="[[$listeners.downloadDesktop]]"
+            title="Download the Maintenance desktop app for Windows: secure key storage, tray badge, notifications, Ctrl+Shift+Space for Auto Pilot">
+            <span slot="startIcon" class="oj-ux-ico-download" aria-hidden="true"></span>
+            Download desktop app
+          </oj-button>
+        </oj-bind-if>
         <oj-button chroming="borderless" on-oj-action="[[$listeners.bellClick]]"
-          :title="[[ $application.variables.counts.pending + ' ' + $application.functions.plural($application.variables.counts.pending, 'request is', 'requests are') + ' waiting for approval' ]]">
-          <oj-bind-text value="[[ 'Approvals (' + $application.variables.counts.pending + ')' ]]"></oj-bind-text>
+          :title="[[ $variables.pendingCount + ' ' + $application.functions.plural($variables.pendingCount, 'request is', 'requests are') + ' waiting for approval' ]]">
+          <oj-bind-text value="[[ 'Approvals (' + $variables.pendingCount + ')' ]]"></oj-bind-text>
         </oj-button>
         <oj-button chroming="borderless" on-oj-action="[[$listeners.resetDemo]]" title="Put the sample data back to how it started">Reset sample data</oj-button>
         <oj-button chroming="borderless" on-oj-action="[[$listeners.openSettings]]" title="Auto Pilot settings: Claude API key and model">Settings</oj-button>
@@ -27,8 +40,8 @@
       </header>
 
       <div class="oj-web-applayout-content-nopad oj-sm-margin-4x">
-        <!-- Toasts: chains set $application.variables.messages -->
-        <oj-messages messages="[[ $application.variables.messages ]]" display="notification" position="{}"></oj-messages>
+        <!-- Toasts: $application.functions.message(...) raises mxtoast on #mxBridge -->
+        <oj-messages messages="[[ $variables.toasts ]]" display="notification" position="{}"></oj-messages>
 
         <div>
           <!-- Renders the selected flow -->
@@ -46,7 +59,7 @@
 
   <!-- ============ Auto Pilot panel (stays open while you use the app) ============ -->
   <oj-drawer-popup id="autopilotDrawer" class="mx-ap-drawer" edge="end" modality="modeless" auto-dismiss="none"
-    opened="{{ $application.variables.autopilotOpen }}" on-opened-changed="[[$listeners.autopilotOpenedChanged]]"
+    opened="{{ $variables.apOpen }}" on-opened-changed="[[$listeners.autopilotOpenedChanged]]"
     aria-label="Auto Pilot">
     <div class="mx-ap">
       <div class="mx-ap-head">
@@ -63,7 +76,7 @@
 
       <oj-bind-if test="[[ !$variables.apSettings.hasKey ]]">
         <div class="mx-banner mx-ap-setup" role="status">
-          <span class="mx-banner-text">Add your Claude API key to start. It stays in this browser and is sent only to Anthropic.</span>
+          <span class="mx-banner-text"><oj-bind-text value="[[ $variables.apSettings.desktop ? 'Add your Claude API key to start. The desktop app keeps it in secure storage and sends it only to Anthropic.' : 'Add your Claude API key to start. It stays in this browser and is sent only to Anthropic.' ]]"></oj-bind-text></span>
           <oj-button chroming="callToAction" on-oj-action="[[$listeners.openSettings]]">Add key</oj-button>
         </div>
       </oj-bind-if>
@@ -181,17 +194,27 @@
         <oj-select-single label-hint="Model"
           data="[[ $variables.apModelsADP ]]"
           value="{{ $variables.apForm.model }}"></oj-select-single>
-        <oj-switch label-hint="Remember the key in this browser" value="{{ $variables.apForm.remember }}"></oj-switch>
+        <oj-bind-if test="[[ !$variables.apSettings.desktop ]]">
+          <oj-switch label-hint="Remember the key in this browser" value="{{ $variables.apForm.remember }}"></oj-switch>
+        </oj-bind-if>
         <oj-switch label-hint="Let Auto Pilot read the maintenance data and save draft requests" value="{{ $variables.apForm.useData }}"></oj-switch>
       </oj-form-layout>
 
       <oj-bind-if test="[[ $variables.apStatus ]]">
         <p :class="[[ $variables.apStatusOk ? 'oj-text-color-success' : 'oj-text-color-danger' ]]" role="status"><oj-bind-text value="[[ $variables.apStatus ]]"></oj-bind-text></p>
       </oj-bind-if>
-      <p class="oj-text-color-secondary oj-typography-body-sm">
-        The key stays in this browser and is sent only to api.anthropic.com. This is fine for a demo; for production,
-        call Claude from a server-side proxy (ORDS, OIC or another backend) so the key never reaches the browser.
-      </p>
+      <oj-bind-if test="[[ $variables.apSettings.desktop ]]">
+        <p class="oj-text-color-secondary oj-typography-body-sm">
+          <oj-bind-text value="[[ 'The desktop app keeps the key in ' + $variables.apSettings.keyStore + '. The page never sees it: the desktop app calls api.anthropic.com itself.' ]]"></oj-bind-text>
+        </p>
+      </oj-bind-if>
+      <oj-bind-if test="[[ !$variables.apSettings.desktop ]]">
+        <p class="oj-text-color-secondary oj-typography-body-sm">
+          The key stays in this browser and is sent only to api.anthropic.com. This is fine for a demo; for production,
+          call Claude from a server-side proxy (ORDS, OIC or another backend) so the key never reaches the browser.
+          The desktop app keeps it in Windows secure storage instead.
+        </p>
+      </oj-bind-if>
     </div>
     <div slot="footer">
       <oj-bind-if test="[[ $variables.apSettings.hasKey ]]">

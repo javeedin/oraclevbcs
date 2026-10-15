@@ -740,10 +740,64 @@ define(['oj-sp/spectra-shell/config/config'], () => {
   }
 
   /* --------------------------------------------------------------------
+   * Shell bridge and desktop client
+   *
+   * #mxBridge is a hidden element in the shell page. The app module raises DOM events on it and
+   * the shell page handles them with its own chains, so the header count, the toasts and the
+   * Auto Pilot panel update whichever page changed the data:
+   *   mxcounts   detail = counts()            > header "Approvals (n)", tray and taskbar badge
+   *   mxtoast    detail = message(...) array  > toast
+   *   mxask      detail = { prompt }          > opens Auto Pilot and asks the question
+   *   mxcommand  detail = { command, flow }   > navigate | settings (tray, menu, shortcut)
+   *
+   * window.mxDesktop exists only inside the desktop client (desktop/preload.js). There the Claude
+   * key lives in the operating system's secure storage and the desktop app calls Claude itself.
+   * ------------------------------------------------------------------ */
+
+  const DESKTOP = typeof window !== 'undefined' && window.mxDesktop && window.mxDesktop.isDesktop === true ? window.mxDesktop : null;
+  const DESKTOP_RELEASES = 'https://github.com/javeedin/oraclevbcs/releases/latest';
+  const DESKTOP_SETUP = `${DESKTOP_RELEASES}/download/Maintenance-Setup.exe`;
+
+  function shellEvent(name, detail) {
+    const el = typeof document !== 'undefined' ? document.getElementById('mxBridge') : null;
+    if (!el || typeof CustomEvent !== 'function') {
+      return false;
+    }
+    el.dispatchEvent(new CustomEvent(name, { detail }));
+    return true;
+  }
+
+  /** Calls window.mxDesktop.<name>(...); undefined in a browser or when the call fails. */
+  function desktopCall(name, ...args) {
+    if (!DESKTOP || typeof DESKTOP[name] !== 'function') {
+      return undefined;
+    }
+    try {
+      return DESKTOP[name](...args);
+    } catch {
+      return undefined;
+    }
+  }
+
+  // Tray, menu and global shortcut commands from the desktop client.
+  if (DESKTOP && typeof DESKTOP.onCommand === 'function') {
+    DESKTOP.onCommand((cmd) => {
+      const c = cmd && typeof cmd === 'object' ? cmd : {};
+      if (c.command === 'autopilot') {
+        shellEvent('mxask', { prompt: typeof c.prompt === 'string' ? c.prompt : '' });
+      } else {
+        shellEvent('mxcommand', { command: String(c.command || ''), flow: String(c.flow || '') });
+      }
+    });
+  }
+
+  /* --------------------------------------------------------------------
    * Auto Pilot: an assistant on Claude (Claude Messages API, called from the browser)
    *
    * The API key stays in this browser: in localStorage when "Remember" is on, otherwise
    * only in memory until the page reloads. It is sent only to api.anthropic.com.
+   * In the desktop client the key is kept in the operating system's secure storage instead,
+   * and the desktop app makes the call (the page never sees the key).
    * For production, call Claude from a server-side proxy (ORDS, OIC or another backend)
    * so the key never reaches the browser.
    * ------------------------------------------------------------------ */
@@ -781,10 +835,25 @@ define(['oj-sp/spectra-shell/config/config'], () => {
     if (!s.apiKey && apSessionKey) {
       s.apiKey = apSessionKey;
     }
+    if (DESKTOP) {
+      // The desktop client holds the key; the page never has it.
+      s.apiKey = '';
+      s.remember = true;
+    }
     if (!AP_MODELS.some((m) => m.value === s.model)) {
       s.model = AP_DEFAULTS.model;
     }
     return s;
+  }
+
+  /** Whether a key is saved, and a hint of it: from this browser, or from the desktop client. */
+  function apKeyStatus(s) {
+    if (DESKTOP) {
+      const st = desktopCall('keyStatus') || {};
+      return { hasKey: st.hasKey === true, keyHint: String(st.keyHint || ''), store: String(st.store || 'secure storage'), secure: st.secure === true };
+    }
+    const k = (s || apRead()).apiKey;
+    return { hasKey: !!k, keyHint: k ? `${k.slice(0, 7)}…${k.slice(-4)}` : '', store: 'this browser', secure: false };
   }
 
   function apWrite(s) {
@@ -1136,7 +1205,39 @@ define(['oj-sp/spectra-shell/config/config'], () => {
     return list;
   }
 
+  function apCheck(ok, status, data) {
+    if (ok) {
+      return data || {};
+    }
+    const detail = data && data.error && data.error.message ? data.error.message : `HTTP ${status}`;
+    const hint = {
+      400: 'Claude could not process the request.',
+      401: 'The API key was rejected. Check it in Settings.',
+      403: 'This API key is not allowed to do that.',
+      404: 'That model is not available to this key. Pick another model in Settings.',
+      413: 'The conversation is too long. Start a new chat.',
+      429: 'Rate or spend limit reached. Wait a moment and try again.',
+      529: 'Claude is busy right now. Try again in a minute.',
+    }[status] || 'The Claude API returned an error.';
+    throw new Error(`${hint} (${status}: ${detail})`);
+  }
+
+  /**
+   * One Claude Messages API call. In the desktop client the desktop app makes it with the saved key
+   * (apiKey, when given, is a typed key being tested).
+   */
   async function apCall(apiKey, body) {
+    if (DESKTOP) {
+      const r = (await desktopCall('claude', body, apiKey || '')) || { ok: false, status: 0 };
+      if (!r.status) {
+        throw new Error(
+          r.aborted
+            ? 'Claude took more than 2 minutes to answer. Try again, or pick a faster model in Settings.'
+            : 'The desktop app could not reach api.anthropic.com. Check the internet connection and any proxy or firewall.',
+        );
+      }
+      return apCheck(r.ok === true, r.status, r.data);
+    }
     const controller = typeof AbortController === 'function' ? new AbortController() : null;
     const timer = controller ? setTimeout(() => controller.abort(), 120000) : null;
     let response;
@@ -1169,25 +1270,12 @@ define(['oj-sp/spectra-shell/config/config'], () => {
     } catch {
       data = null;
     }
-    if (!response.ok) {
-      const detail = data && data.error && data.error.message ? data.error.message : `HTTP ${response.status}`;
-      const hint = {
-        400: 'Claude could not process the request.',
-        401: 'The API key was rejected. Check it in Settings.',
-        403: 'This API key is not allowed to do that.',
-        404: 'That model is not available to this key. Pick another model in Settings.',
-        413: 'The conversation is too long. Start a new chat.',
-        429: 'Rate or spend limit reached. Wait a moment and try again.',
-        529: 'Claude is busy right now. Try again in a minute.',
-      }[response.status] || 'The Claude API returned an error.';
-      throw new Error(`${hint} (${response.status}: ${detail})`);
-    }
-    return data || {};
+    return apCheck(response.ok, response.status, data);
   }
 
   async function apAsk(app, history, text) {
     const settings = apRead();
-    if (!settings.apiKey) {
+    if (!apKeyStatus(settings).hasKey) {
       throw new Error('Add your Claude API key in Auto Pilot settings first.');
     }
     const messages = apTrim(Array.isArray(history) ? history : []);
@@ -1453,7 +1541,7 @@ define(['oj-sp/spectra-shell/config/config'], () => {
       ROLES.forEach((role) => {
         inboxByRole[role.id] = pending.filter((r) => (waitingStep(r) || {}).roleId === role.id).length;
       });
-      return {
+      const c = {
         openRequests: s.requests.filter((r) => ['Pending approval', 'Approved', 'In progress'].includes(r.status)).length,
         drafts: s.requests.filter((r) => r.status === 'Draft').length,
         pending: pending.length,
@@ -1461,6 +1549,10 @@ define(['oj-sp/spectra-shell/config/config'], () => {
         workOrdersActive: s.workOrders.filter((w) => w.status !== 'Completed').length,
         equipmentDown: s.equipment.filter((e) => e.status === 'Down').length,
       };
+      // Every chain calls this after it changes data: the shell header and the desktop badge follow.
+      shellEvent('mxcounts', clone(c));
+      desktopCall('setCounts', { pending: c.pending, drafts: c.drafts, equipmentDown: c.equipmentDown, workOrdersActive: c.workOrdersActive });
+      return c;
     }
 
     dashboard() {
@@ -1918,13 +2010,16 @@ define(['oj-sp/spectra-shell/config/config'], () => {
     /** What the UI may show: never the key itself, only a hint of it. */
     autopilotSettings() {
       const s = apRead();
+      const k = apKeyStatus(s);
       return {
-        hasKey: !!s.apiKey,
-        keyHint: s.apiKey ? `${s.apiKey.slice(0, 7)}…${s.apiKey.slice(-4)}` : '',
+        hasKey: k.hasKey,
+        keyHint: k.keyHint,
         model: s.model,
         modelLabel: apModelLabel(s.model),
         remember: s.remember !== false,
         useData: s.useData !== false,
+        desktop: !!DESKTOP,
+        keyStore: DESKTOP ? (k.secure ? k.store : 'memory until the app closes (this computer has no secure storage)') : 'this browser',
       };
     }
 
@@ -1938,10 +2033,13 @@ define(['oj-sp/spectra-shell/config/config'], () => {
       const current = apRead();
       const f = form || {};
       const typed = String(f.apiKey || '').trim();
+      if (DESKTOP && typed) {
+        desktopCall('saveKey', typed);
+      }
       apWrite({
-        apiKey: typed || current.apiKey,
+        apiKey: DESKTOP ? '' : typed || current.apiKey,
         model: AP_MODELS.some((m) => m.value === f.model) ? f.model : current.model,
-        remember: f.remember !== false,
+        remember: DESKTOP ? true : f.remember !== false,
         useData: f.useData !== false,
       });
     }
@@ -1950,15 +2048,17 @@ define(['oj-sp/spectra-shell/config/config'], () => {
       const current = apRead();
       apWrite(Object.assign({}, current, { apiKey: '' }));
       apSessionKey = '';
+      desktopCall('removeKey');
     }
 
     /** Sends a tiny request to check the key and model. Uses the typed key when there is one. */
     async testAutopilot(form) {
       const current = apRead();
       const f = form || {};
-      const key = String(f.apiKey || '').trim() || current.apiKey;
+      const typed = String(f.apiKey || '').trim();
+      const key = typed || current.apiKey;
       const model = AP_MODELS.some((m) => m.value === f.model) ? f.model : current.model;
-      if (!key) {
+      if (!key && !(DESKTOP && apKeyStatus(current).hasKey)) {
         return { ok: false, message: 'Enter your Claude API key first.' };
       }
       try {
@@ -1983,18 +2083,65 @@ define(['oj-sp/spectra-shell/config/config'], () => {
       return apBlocks(text);
     }
 
+    /** Opens Auto Pilot from any page and, with a prompt, asks it straight away. */
+    openAutopilot(prompt) {
+      return shellEvent('mxask', { prompt: typeof prompt === 'string' ? prompt : '' });
+    }
+
+    /* ---------- Desktop client ---------- */
+
+    /** { isDesktop, version, platform, source } - isDesktop is false in a browser. */
+    desktopInfo() {
+      if (!DESKTOP) {
+        return { isDesktop: false, version: '', platform: '', source: '' };
+      }
+      const i = desktopCall('info') || {};
+      return { isDesktop: true, version: String(i.version || ''), platform: String(i.platform || ''), source: String(i.source || '') };
+    }
+
+    /** Where to download the desktop app: the Windows installer, or the releases page on other systems. */
+    desktopDownload() {
+      const nav = typeof navigator !== 'undefined' ? navigator : {};
+      const platform = String((nav.userAgentData && nav.userAgentData.platform) || nav.platform || nav.userAgent || '');
+      const isWindows = /win/i.test(platform);
+      return { isWindows, url: isWindows ? DESKTOP_SETUP : DESKTOP_RELEASES, file: 'Maintenance-Setup.exe', releases: DESKTOP_RELEASES };
+    }
+
+    /** A desktop notification, shown only while the desktop app is in the background. No-op in a browser. */
+    notifyDesktop(title, markdown, command) {
+      if (!DESKTOP) {
+        return false;
+      }
+      const text = String(markdown || '')
+        .replace(/```[\s\S]*?```/g, ' ')
+        .replace(/^\s*#{1,6}\s+/gm, '')
+        .replace(/^\s*[-*•]\s+/gm, '')
+        .replace(/^\s*\|.*\|\s*$/gm, ' ');
+      const body = apPlain(text).replace(/\s+/g, ' ').trim();
+      desktopCall('notify', {
+        title: String(title || 'Maintenance'),
+        body: body.length > 160 ? `${body.slice(0, 157)}…` : body,
+        command: command || null,
+        onlyWhenUnfocused: true,
+      });
+      return true;
+    }
+
     /* ---------- Messages (shell toasts) ---------- */
 
-    message(severity, summary, detail) {
-      return [
+    /** A toast. Chains assign it to $application.variables.messages; the shell also gets it through #mxBridge. */
+    message(severity, summary, detail, timeoutMs) {
+      const toast = [
         {
           severity: severity || 'confirmation',
           summary: summary || '',
           detail: detail || '',
-          autoTimeout: 5000,
+          autoTimeout: timeoutMs || 5000,
           closeAffordance: 'defaults',
         },
       ];
+      shellEvent('mxtoast', clone(toast));
+      return toast;
     }
 
     /* ---------- Formatting helpers used in HTML ---------- */

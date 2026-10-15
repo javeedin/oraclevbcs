@@ -1,0 +1,118 @@
+# Maintenance desktop client (Electron)
+#
+#  1. Linux: builds the Visual Builder app with Oracle's grunt tools, captures it as `grunt vb-serve`
+#     serves it (desktop/app), and smoke-tests the desktop client with the real app under Xvfb
+#     (bridge, secure key, header count, tray commands, Auto Pilot against a mock Claude API).
+#  2. Windows: packages the installer, Maintenance-Setup.exe. On a v* tag (v1.0.1, ...) it publishes
+#     a GitHub release: the app's "Download desktop app" button and the installed apps' automatic
+#     updates both use the latest release.
+#
+# Release a new version: bump "version" in desktop/package.json, commit, then
+#   git tag v<version> && git push origin v<version>
+name: Desktop app
+
+on:
+  push:
+    tags: ['v*']
+    branches: ['feature/maintenance-redwood-templates']
+    paths:
+      - 'desktop/**'
+      - 'webApps/**'
+      - 'settings/**'
+      - 'visual-application.json'
+      - 'package.json'
+      - 'Gruntfile.js'
+      - '.github/workflows/desktop.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: desktop-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  app:
+    name: Build the app and smoke-test the desktop client
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - name: Check the tag matches desktop/package.json
+        if: startsWith(github.ref, 'refs/tags/v')
+        run: |
+          node -e "const v = require('./desktop/package.json').version; const t = process.env.GITHUB_REF_NAME; if (t !== 'v' + v) { console.log('::error title=Version mismatch::Tag ' + t + ' does not match desktop/package.json version ' + v); process.exit(1); }"
+
+      - name: Install Oracle's VB build tools
+        run: node desktop/scripts/ci-step.js "Install VB build tools" -- npm install --no-audit --no-fund
+
+      - name: Build the VB app and capture it for the desktop client
+        run: node desktop/scripts/ci-step.js "Build the VB app" -- npm run build:desktop
+
+      - name: Install the desktop client
+        working-directory: desktop
+        run: node scripts/ci-step.js "Install the desktop client" -- npm ci --no-audit --no-fund
+
+      - name: Smoke test (Electron, the real app, a mock Claude API)
+        working-directory: desktop
+        env:
+          MX_SELFTEST: '1'
+          MX_SELFTEST_APP: '1'
+          MX_CLAUDE_URL: http://127.0.0.1:18999/v1/messages
+          MX_SELFTEST_OUT: ${{ github.workspace }}/selftest
+        run: |
+          which xvfb-run || (sudo apt-get update && sudo apt-get install -y xvfb)
+          node scripts/ci-step.js "Desktop smoke test" -- xvfb-run -a npx electron . --no-sandbox
+
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: selftest
+          path: selftest/
+          if-no-files-found: ignore
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: desktop-app
+          path: desktop/app/
+          include-hidden-files: true
+
+  windows:
+    name: Windows installer
+    needs: app
+    runs-on: windows-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - uses: actions/download-artifact@v4
+        with:
+          name: desktop-app
+          path: desktop/app
+
+      - name: Install the desktop client
+        working-directory: desktop
+        run: node scripts/ci-step.js "Install the desktop client (Windows)" -- npm ci --no-audit --no-fund
+
+      - name: Package the installer (published as a release on a v* tag)
+        working-directory: desktop
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: node scripts/ci-step.js "Package the Windows installer" -- npx electron-builder --win --publish ${{ startsWith(github.ref, 'refs/tags/v') && 'always' || 'never' }}
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: Maintenance-Setup
+          path: |
+            desktop/dist/*.exe
+            desktop/dist/latest.yml

@@ -747,14 +747,6 @@
     "openRequestView": {
       "type": "string",
       "defaultValue": ""
-    },
-    "autopilotOpen": {
-      "type": "boolean",
-      "defaultValue": false
-    },
-    "autopilotQueued": {
-      "type": "string",
-      "defaultValue": ""
     }
   },
   "eventListeners": {},

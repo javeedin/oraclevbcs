@@ -26,6 +26,20 @@
       "problemMatcher": []
     },
     {
+      "label": "Desktop: build the app for the desktop client",
+      "detail": "npm run build:desktop - builds the VB app and copies it, as vb-serve serves it, into desktop/app",
+      "type": "shell",
+      "command": "npm run build:desktop",
+      "problemMatcher": []
+    },
+    {
+      "label": "Desktop: run",
+      "detail": "Runs the Electron desktop client (after 'Desktop: build the app')",
+      "type": "shell",
+      "command": "npm --prefix desktop install && npm --prefix desktop start",
+      "problemMatcher": []
+    },
+    {
       "label": "VB: audit",
       "detail": "grunt vb-audit - Oracle's JET and VB best-practice rules",
       "type": "shell",
