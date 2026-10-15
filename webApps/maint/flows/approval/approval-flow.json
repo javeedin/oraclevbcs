@@ -1,8 +1,0 @@
-{
-  "id": "approval",
-  "description": "Send draft requests for approval",
-  "defaultPage": "send-approval",
-  "services": {},
-  "types": {},
-  "variables": {}
-}

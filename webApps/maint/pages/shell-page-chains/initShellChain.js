@@ -9,20 +9,16 @@ define([
 ) => {
   'use strict';
 
-  /** Runs once when the app opens: badge counts, and a closed menu on small screens. */
+  /** Runs once when the app opens: the counts shown in the header. */
   class initShellChain extends ActionChain {
 
     /**
      * @param {Object} context
      */
     async run(context) {
-      const { $page, $application } = context;
+      const { $application } = context;
 
       $application.variables.counts = $application.functions.counts();
-
-      if ($page.functions.isNarrow()) {
-        $page.variables.navOpen = false;
-      }
     }
   }
 

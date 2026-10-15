@@ -1,75 +1,59 @@
 {
-  "description": "Application shell: Redwood header, sliding navigation drawer, toast messages and the router that shows the module flows.",
-  "routerFlow": "dashboard",
+  "description": "Application shell on Oracle's Redwood templates: pillar theme, app header, Redwood in-app navigation, toast messages and the router that shows the module flows.",
+  "routerFlow": "home",
   "variables": {
-    "navOpen": {
-      "type": "boolean",
-      "defaultValue": true
-    },
-    "menu": {
-      "type": "object[]",
+    "navigationList": {
+      "type": "navigationType[]",
       "defaultValue": [
         {
-          "flow": "dashboard",
-          "label": "Dashboard",
-          "section": "Overview",
-          "badge": "",
-          "badgeTone": "",
-          "icon": "M4 4h7v9H4zM13 4h7v5h-7zM13 11h7v9h-7zM4 15h7v5H4z"
+          "id": "home",
+          "icon": "oj-ux-ico-home",
+          "label": "Home"
         },
         {
-          "flow": "request",
-          "label": "Raise request",
-          "section": "Requests",
-          "badge": "",
-          "badgeTone": "",
-          "icon": "M12 3.5a8.5 8.5 0 1 0 0 17 8.5 8.5 0 0 0 0-17zM12 8v8M8 12h8"
+          "id": "dashboard",
+          "icon": "oj-ux-ico-dashboard",
+          "label": "Dashboard"
         },
         {
-          "flow": "requests",
-          "label": "My requests",
-          "section": "",
-          "badge": "openRequests",
-          "badgeTone": "",
-          "icon": "M9 6h11M9 12h11M9 18h11M4.5 6h.01M4.5 12h.01M4.5 18h.01"
+          "id": "requests",
+          "icon": "oj-ux-ico-content-item-search",
+          "label": "Requests"
         },
         {
-          "flow": "approval",
-          "label": "Send for approval",
-          "section": "",
-          "badge": "drafts",
-          "badgeTone": "info",
-          "icon": "M20.5 3.5L10 14M20.5 3.5L14 20.5l-4-6.5-6.5-4z"
+          "id": "equipment",
+          "icon": "oj-ux-ico-box",
+          "label": "Equipment"
         },
         {
-          "flow": "equipment",
-          "label": "Browse equipment",
-          "section": "Assets",
-          "badge": "equipmentDown",
-          "badgeTone": "danger",
-          "icon": "M14.7 6.3a4 4 0 0 0-5.3 5.3l-5.9 5.9a1.5 1.5 0 0 0 2.1 2.1l5.9-5.9a4 4 0 0 0 5.3-5.3l-2.4 2.4-2.1-.4-.4-2.1z"
+          "id": "inbox",
+          "icon": "oj-ux-ico-employee",
+          "label": "Approvals"
         },
         {
-          "flow": "inbox",
-          "label": "Approval inbox",
-          "section": "Approvals and work",
-          "badge": "pending",
-          "badgeTone": "warn",
-          "icon": "M12 3.5a8.5 8.5 0 1 0 0 17 8.5 8.5 0 0 0 0-17zM8.3 12.3l2.6 2.6 4.8-5"
-        },
-        {
-          "flow": "workorders",
-          "label": "Work orders",
-          "section": "",
-          "badge": "workOrdersActive",
-          "badgeTone": "",
-          "icon": "M9 3.5h6v3H9zM7.5 5H5.5v15.5h13V5h-2M8.5 11h7M8.5 14.5h7M8.5 18h4"
+          "id": "workorders",
+          "icon": "oj-ux-ico-calendar",
+          "label": "Work orders"
         }
       ]
+    },
+    "navigationADP": {
+      "type": "vb/ArrayDataProvider2",
+      "defaultValue": {
+        "data": "{{ $variables.navigationList }}",
+        "itemType": "navigationType",
+        "keyAttributes": "id"
+      }
     }
   },
   "metadata": {},
-  "types": {},
+  "types": {
+    "navigationType": {
+      "id": "string",
+      "icon": "string",
+      "label": "string"
+    }
+  },
   "eventListeners": {
     "vbEnter": {
       "chains": [
@@ -78,19 +62,22 @@
         }
       ]
     },
-    "toggleNav": {
-      "chains": [
-        {
-          "chain": "toggleNavChain"
-        }
-      ]
-    },
-    "navItemClick": {
+    "navigationSelection": {
       "chains": [
         {
           "chain": "navigateChain",
           "parameters": {
-            "flow": "{{ $current.data.flow }}"
+            "flow": "{{ $event.detail.currentId }}"
+          }
+        }
+      ]
+    },
+    "goHome": {
+      "chains": [
+        {
+          "chain": "navigateChain",
+          "parameters": {
+            "flow": "home"
           }
         }
       ]
@@ -115,11 +102,14 @@
   },
   "imports": {
     "components": {
+      "oj-sp-pillar-theme": {
+        "path": "oj-sp/pillar-theme/loader"
+      },
+      "oj-sp-in-app-navigation": {
+        "path": "oj-sp/in-app-navigation/loader"
+      },
       "oj-button": {
         "path": "ojs/ojbutton"
-      },
-      "oj-drawer-layout": {
-        "path": "ojs/ojdrawerlayout"
       },
       "oj-avatar": {
         "path": "ojs/ojavatar"

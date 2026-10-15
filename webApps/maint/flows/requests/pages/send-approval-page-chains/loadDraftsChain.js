@@ -18,8 +18,6 @@ define([
     async run(context) {
       const { $page, $application } = context;
 
-      $application.variables.activeNav = 'approval';
-
       // Sample data. Live version: GET /requests?status=Draft&requestedBy=me from ORDS.
       const drafts = $application.functions.drafts();
       const ids = drafts.map((d) => d.id);

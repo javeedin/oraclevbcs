@@ -56,6 +56,26 @@ define([], () => {
       ];
     }
 
+    /** Keeps the work orders that match the search text. */
+    filterList(list, text) {
+      const q = String(text || '').trim().toLowerCase();
+      if (!q) {
+        return list || [];
+      }
+      return (list || []).filter((w) =>
+        [w.id, w.requestId, w.title, w.equipmentName, w.location, w.technician, w.priority, w.type]
+          .join(' ')
+          .toLowerCase()
+          .includes(q),
+      );
+    }
+
+    /** Subtitle under the page title. */
+    subtitle(stats) {
+      const s = stats || {};
+      return `${s.inProgress || 0} in progress · ${s.scheduled || 0} scheduled · ${s.completedThisWeek || 0} completed in the last 7 days`;
+    }
+
     stats(list) {
       const all = list || [];
       const weekAgo = Date.now() - 7 * DAY;

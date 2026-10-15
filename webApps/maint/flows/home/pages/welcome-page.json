@@ -1,0 +1,111 @@
+{
+  "title": "Home",
+  "description": "Redwood welcome page: greeting banner with the main actions, what needs attention, shortcuts and recent requests",
+  "variables": {
+    "pageTitle": {
+      "type": "string",
+      "defaultValue": "Welcome"
+    },
+    "overline": {
+      "type": "string",
+      "defaultValue": ""
+    },
+    "summary": {
+      "type": "string",
+      "defaultValue": "Loading the latest maintenance picture..."
+    },
+    "attentionADP": {
+      "type": "vb/ArrayDataProvider2",
+      "defaultValue": {
+        "keyAttributes": "id",
+        "itemType": "CardType"
+      }
+    },
+    "shortcutsADP": {
+      "type": "vb/ArrayDataProvider2",
+      "defaultValue": {
+        "keyAttributes": "id",
+        "itemType": "CardType"
+      }
+    },
+    "recentADP": {
+      "type": "vb/ArrayDataProvider2",
+      "defaultValue": {
+        "keyAttributes": "id",
+        "itemType": "CardType"
+      }
+    },
+    "attentionCount": {
+      "type": "number",
+      "defaultValue": 0
+    }
+  },
+  "metadata": {},
+  "types": {
+    "CardType": {
+      "id": "string",
+      "badge": "string",
+      "label": "string",
+      "title": "string",
+      "text": "string",
+      "flow": "string",
+      "page": "string",
+      "requestId": "string"
+    }
+  },
+  "eventListeners": {
+    "vbEnter": {
+      "chains": [
+        {
+          "chain": "loadHomeChain"
+        }
+      ]
+    },
+    "welcomePrimaryAction": {
+      "chains": [
+        {
+          "chain": "goToChain",
+          "parameters": {
+            "flow": "requests",
+            "page": "raise-request"
+          }
+        }
+      ]
+    },
+    "welcomeSecondaryAction": {
+      "chains": [
+        {
+          "chain": "goToChain",
+          "parameters": {
+            "flow": "equipment"
+          }
+        }
+      ]
+    },
+    "openCard": {
+      "chains": [
+        {
+          "chain": "goToChain",
+          "parameters": {
+            "flow": "{{ $event.detail.context.data.flow }}",
+            "page": "{{ $event.detail.context.data.page }}",
+            "requestId": "{{ $event.detail.context.data.requestId }}"
+          }
+        }
+      ]
+    }
+  },
+  "imports": {
+    "components": {
+      "oj-sp-welcome-page": {
+        "path": "oj-sp/welcome-page/loader"
+      },
+      "oj-sp-object-card": {
+        "path": "oj-sp/object-card/loader"
+      },
+      "oj-list-view": {
+        "path": "ojs/ojlistview"
+      }
+    }
+  }
+}

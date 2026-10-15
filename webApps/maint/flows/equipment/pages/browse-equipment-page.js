@@ -22,17 +22,23 @@ define([], () => {
       });
     }
 
-    /** Category chips with counts. */
-    categoryChips(all, selected) {
+    /** Category choices for the select, each with its count. */
+    categoryOptions(all) {
       const list = all || [];
-      const chips = [{ key: 'All', label: 'All', count: list.length, selected: !selected || selected === 'All' }];
+      const options = [{ value: 'All', label: `All categories (${list.length})` }];
       CATEGORY_ORDER.forEach((cat) => {
         const count = list.filter((e) => e.category === cat).length;
         if (count) {
-          chips.push({ key: cat, label: cat, count, selected: selected === cat });
+          options.push({ value: cat, label: `${cat} (${count})` });
         }
       });
-      return chips;
+      return options;
+    }
+
+    /** Subtitle under the page title. */
+    subtitle(stats) {
+      const s = stats || {};
+      return `${s.total || 0} assets across three sites: ${s.running || 0} running, ${s.maintenance || 0} in maintenance, ${s.down || 0} down`;
     }
 
     stats(all) {

@@ -2,16 +2,7 @@ define([], () => {
   'use strict';
 
   const OPEN = ['Pending approval', 'Approved', 'In progress'];
-  const CHIPS = [
-    { key: 'All', label: 'All', tone: '' },
-    { key: 'Open', label: 'Open', tone: '' },
-    { key: 'Draft', label: 'Draft', tone: 'draft' },
-    { key: 'Pending approval', label: 'Pending approval', tone: 'pending' },
-    { key: 'Approved', label: 'Approved', tone: 'approved' },
-    { key: 'In progress', label: 'In progress', tone: 'progress' },
-    { key: 'Completed', label: 'Completed', tone: 'done' },
-    { key: 'Rejected', label: 'Rejected', tone: 'rejected' },
-  ];
+  const STATUS_OPTIONS = ['All', 'Open', 'Draft', 'Pending approval', 'Approved', 'In progress', 'Completed', 'Rejected'];
 
   const MONTHS = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
 
@@ -24,7 +15,7 @@ define([], () => {
     return `${day} ${MONTHS[m - 1]} ${y}${t ? `, ${t}` : ''}`;
   }
 
-  function matches(r, status) {
+  function matchesStatus(r, status) {
     if (!status || status === 'All') {
       return true;
     }
@@ -34,36 +25,44 @@ define([], () => {
     return r.status === status;
   }
 
-  /** My requests page module: $functions.<name>() in HTML, $page.functions.<name>() in chains. */
+  function matchesScope(r, scope) {
+    return scope !== 'mine' || r.requestedBy === 'You';
+  }
+
+  function matchesText(r, text) {
+    const q = String(text || '').trim().toLowerCase();
+    if (!q) {
+      return true;
+    }
+    return [r.id, r.title, r.equipmentName, r.location, r.requestedBy, r.type, r.priority, r.status]
+      .join(' ')
+      .toLowerCase()
+      .includes(q);
+  }
+
+  /** Requests page module: $functions.<name>() in HTML, $page.functions.<name>() in chains. */
   class PageModule {
-    filterRequests(all, status, scope) {
-      return (all || []).filter((r) => matches(r, status) && (scope !== 'mine' || r.requestedBy === 'You'));
+    /** Applies the status, scope and search filters. */
+    filterRequests(all, status, scope, text) {
+      return (all || []).filter((r) => matchesStatus(r, status) && matchesScope(r, scope) && matchesText(r, text));
     }
 
-    statusChips(all, selected, scope) {
-      const list = (all || []).filter((r) => scope !== 'mine' || r.requestedBy === 'You');
-      return CHIPS.map((c) => ({
-        key: c.key,
-        label: c.label,
-        tone: c.tone,
-        count: list.filter((r) => matches(r, c.key)).length,
-        selected: c.key === (selected || 'All'),
+    /** Status choices for the select, each with its count for the current scope and search. */
+    statusOptions(all, scope, text) {
+      const list = (all || []).filter((r) => matchesScope(r, scope) && matchesText(r, text));
+      return STATUS_OPTIONS.map((s) => ({
+        value: s,
+        label: `${s} (${list.filter((r) => matchesStatus(r, s)).length})`,
       }));
     }
 
-    /** Text inside the step circle: a tick, a cross, or the step number. */
-    stepMark(status, level) {
-      if (status === 'Approved') return '✓';
-      if (status === 'Rejected') return '✕';
-      return String(level);
-    }
-
+    /** One line under an approval step. */
     stepLine(step) {
       if (!step) {
         return '';
       }
       if (step.status === 'Approved' || step.status === 'Rejected') {
-        return `${step.status} · ${when(step.decidedOn)}`;
+        return `${when(step.decidedOn)} · ${step.reason}`;
       }
       if (step.status === 'Waiting') {
         return `Waiting for a decision · ${step.reason}`;

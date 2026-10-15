@@ -1,14 +1,15 @@
 {
     "name": "maintenance-redwood-vb",
     "version": "1.0.0",
-    "description": "Maintenance module - Oracle Visual Builder sample app in the Redwood style, built for VS Code and VB Studio",
+    "description": "Maintenance module - Oracle Visual Builder sample app on Oracle Redwood page templates, built for VS Code and VB Studio",
     "private": true,
     "engines": {
         "node": ">=20 <23"
     },
     "scripts": {
-        "build": "grunt vb-process-local",
-        "serve": "grunt vb-process-local && grunt vb-serve:webApps/maint --port=8888 --open",
+        "build": "grunt vb-clean vb-process-local",
+        "serve": "grunt vb-clean vb-process-local && grunt vb-serve:webApps/maint --port=8888 --open",
+        "serve:cdn": "grunt vb-clean local-sources && grunt vb-process-local --git-sources=.local-src && grunt vb-serve:webApps/maint --port=8888 --open",
         "audit": "grunt vb-audit",
         "package": "grunt vb-process-local vb-package",
         "lint": "eslint \"webApps/**/*.js\""
@@ -17,8 +18,8 @@
         "grunt": "^1.4.1",
         "grunt-cli": "^1.4.3",
         "load-grunt-tasks": "^5.1.0",
-        "@oracle/grunt-vb-build": "https://static.oracle.com/cdn/vb/tools/npm/grunt-vb-build/grunt-vb-build-2310.0.18.tar.gz",
-        "@oracle/grunt-vb-audit": "https://static.oracle.com/cdn/vb/tools/npm/grunt-vb-audit/grunt-vb-audit-2310.0.3.tar.gz",
+        "@oracle/grunt-vb-build": "https://static.oracle.com/cdn/vb/tools/npm/grunt-vb-build/grunt-vb-build-2510.4.0.tar.gz",
+        "@oracle/grunt-vb-audit": "https://static.oracle.com/cdn/vb/tools/npm/grunt-vb-audit/grunt-vb-audit-2510.0.0.tar.gz",
         "eslint": "^9.0.0",
         "globals": "^15.0.0"
     },

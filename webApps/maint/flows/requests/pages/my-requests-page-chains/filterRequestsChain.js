@@ -9,18 +9,24 @@ define([
 ) => {
   'use strict';
 
-  /** A status chip or the Everyone / Raised by me switch changed. */
+  /** The search text, the status select or the Everyone / Raised by me switch changed. */
   class filterRequestsChain extends ActionChain {
 
     /**
      * @param {Object} context
      * @param {Object} params
-     * @param {string} [params.status]  chip key: All | Open | Draft | Pending approval | ...
+     * @param {string} [params.text]    raw text from the search field, as you type
+     * @param {string} [params.status]  All | Open | Draft | Pending approval | Approved | In progress | Completed | Rejected
      * @param {string} [params.scope]   all | mine
      */
-    async run(context, { status, scope } = {}) {
+    async run(context, { text, status, scope } = {}) {
       const { $page } = context;
 
+      if (typeof text === 'string') {
+        $page.variables.searchText = text;
+      } else if (text === null) {
+        $page.variables.searchText = '';
+      }
       if (status) {
         $page.variables.statusFilter = status;
       }
@@ -28,11 +34,14 @@ define([
         $page.variables.scope = scope;
       }
 
-      const all = $page.variables.all;
-      const shown = $page.functions.filterRequests(all, $page.variables.statusFilter, $page.variables.scope);
+      const v = $page.variables;
+      const shown = $page.functions.filterRequests(v.all, v.statusFilter, v.scope, v.searchText);
       $page.variables.requestsADP.data = shown;
       $page.variables.shownCount = shown.length;
-      $page.variables.statusChips = $page.functions.statusChips(all, $page.variables.statusFilter, $page.variables.scope);
+      if (status === undefined) {
+        // Only refresh the counts in the status select when something other than the status changed.
+        $page.variables.statusOptionsADP.data = $page.functions.statusOptions(v.all, v.scope, v.searchText);
+      }
     }
   }
 

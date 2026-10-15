@@ -29,8 +29,11 @@ define([
       }
 
       const list = $application.functions.workOrderList();
-      $page.variables.board = $page.functions.board(list);
-      $page.variables.stats = $page.functions.stats(list);
+      $page.variables.all = list;
+      const stats = $page.functions.stats(list);
+      $page.variables.stats = stats;
+      $page.variables.subtitle = $page.functions.subtitle(stats);
+      $page.variables.board = $page.functions.board($page.functions.filterList(list, $page.variables.searchText));
       $application.variables.counts = $application.functions.counts();
     }
   }

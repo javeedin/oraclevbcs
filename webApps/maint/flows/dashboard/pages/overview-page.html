@@ -1,231 +1,237 @@
-<div class="mx-page">
+<!--
+  Dashboard: Oracle's Redwood dashboard landing page template.
+  The scoreboard (slot "kpi") holds five KPIs; selecting one switches the dashboard grid below it,
+  the same pattern as Visual Builder's Dashboard Landing Page template.
+-->
+<oj-sp-dashboard-landing-page page-title="Maintenance dashboard" page-subtitle="[[ $variables.subtitle ]]">
 
-  <!-- ============ Redwood welcome banner ============ -->
-  <section class="mx-banner">
-    <div class="mx-banner-text">
-      <p class="mx-banner-eyebrow"><oj-bind-text value="[[ $application.functions.longToday() ]]"></oj-bind-text></p>
-      <h1 class="mx-banner-title"><oj-bind-text value="[[ $application.functions.greeting() ]]"></oj-bind-text></h1>
-      <p class="mx-banner-sub"><oj-bind-text value="[[ $functions.summaryLine($variables.model) ]]"></oj-bind-text></p>
-      <div class="mx-banner-actions">
-        <button type="button" class="mx-btn mx-btn--on-dark" on-click="[[$listeners.goRequest]]">
-          <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M12 5v14M5 12h14"></path></svg>
-          Raise request
-        </button>
-        <button type="button" class="mx-btn mx-btn--ghost-dark" on-click="[[$listeners.goEquipment]]">Browse equipment</button>
-      </div>
-    </div>
-    <svg class="mx-banner-art" viewBox="0 0 320 180" aria-hidden="true" focusable="false">
-      <circle cx="250" cy="90" r="62" fill="none" stroke="currentColor" stroke-width="1.2" opacity=".55"></circle>
-      <circle cx="250" cy="90" r="40" fill="none" stroke="currentColor" stroke-width="1.2" opacity=".4"></circle>
-      <circle cx="250" cy="90" r="18" fill="none" stroke="currentColor" stroke-width="1.2" opacity=".35"></circle>
-      <path d="M250 0v28M250 152v28M188 90h-28M340 90h-28M206 46l-20-20M314 154l-20-20M206 134l-20 20M314 26l-20 20" stroke="currentColor" stroke-width="1.2" opacity=".35"></path>
-      <path d="M40 150c40-60 80-60 120 0s80 60 120 0" fill="none" stroke="currentColor" stroke-width="1.2" opacity=".3"></path>
-    </svg>
-  </section>
+  <oj-bind-if test="[[ $variables.kpis.length > 0 ]]">
+    <oj-sp-scoreboard slot="kpi" data="[[ $variables.kpisADP ]]"
+      selection="{{ $variables.selectedKpi }}" selection-mode="single"></oj-sp-scoreboard>
+  </oj-bind-if>
 
-  <!-- ============ KPI strip (each card opens its module) ============ -->
-  <div class="mx-kpis">
-    <oj-bind-for-each data="[[ $variables.model.kpis ]]">
-      <template>
-        <button type="button" :class="[[ 'mx-kpi is-' + $current.data.tone ]]" on-click="[[$listeners.goTo]]">
-          <span class="mx-kpi-label"><oj-bind-text value="[[ $current.data.label ]]"></oj-bind-text></span>
-          <span class="mx-kpi-value"><oj-bind-text value="[[ $current.data.value ]]"></oj-bind-text></span>
-          <span class="mx-kpi-sub">
-            <span class="mx-kpi-dot" aria-hidden="true"></span>
-            <oj-bind-text value="[[ $current.data.sub ]]"></oj-bind-text>
-          </span>
-          <svg class="mx-kpi-go" viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h14M13 6l6 6-6 6"></path></svg>
-        </button>
-      </template>
-    </oj-bind-for-each>
-  </div>
+  <oj-switcher value="[[ $variables.selectedKpi ]]">
 
-  <!-- ============ Quick actions ============ -->
-  <section class="mx-section">
-    <h2 class="mx-section-title">Quick actions</h2>
-    <div class="mx-actions">
-      <oj-bind-for-each data="[[ $variables.quickActions ]]">
-        <template>
-          <button type="button" :class="[[ 'mx-action is-' + $current.data.tone ]]" on-click="[[$listeners.goTo]]">
-            <span class="mx-action-icon" aria-hidden="true">
-              <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path :d="[[ $current.data.icon ]]"></path></svg>
-            </span>
-            <span class="mx-action-text">
-              <span class="mx-action-title"><oj-bind-text value="[[ $current.data.title ]]"></oj-bind-text></span>
-              <span class="mx-action-sub"><oj-bind-text value="[[ $current.data.text ]]"></oj-bind-text></span>
-            </span>
-          </button>
-        </template>
-      </oj-bind-for-each>
-    </div>
-  </section>
-
-  <!-- ============ Charts ============ -->
-  <div class="mx-grid mx-grid--1-2">
-    <section class="mx-card">
-      <header class="mx-card-head">
-        <h2 class="mx-card-title">Requests by status</h2>
-        <button type="button" class="mx-link" on-click="[[$listeners.goRequests]]">View all</button>
-      </header>
-      <div class="mx-donut">
-        <oj-chart class="mx-donut-chart" type="pie"
-          data="[[ $variables.statusADP ]]"
-          legend.rendered="off"
-          selection-mode="none"
-          hover-behavior="dim"
-          animation-on-display="auto"
-          animation-on-data-change="auto"
-          style-defaults.pie-inner-radius="0.7"
-          pie-center.label="[[ $variables.model.totalRequests + '' ]]"
-          aria-label="Requests by status">
-          <template slot="itemTemplate" data-oj-as="item">
-            <oj-chart-item
-              value="[[ item.data.value ]]"
-              series-id="[[ item.data.series ]]"
-              group-id="[[ [item.data.group] ]]"
-              color="[[ item.data.color ]]">
-            </oj-chart-item>
-          </template>
-        </oj-chart>
-        <ul class="mx-legend">
-          <oj-bind-for-each data="[[ $variables.model.statusPoints ]]">
-            <template>
-              <li class="mx-legend-row">
-                <span :class="[[ 'mx-swatch is-' + $application.functions.statusTone($current.data.series) ]]" aria-hidden="true"></span>
-                <span class="mx-legend-label"><oj-bind-text value="[[ $current.data.series ]]"></oj-bind-text></span>
-                <span class="mx-legend-value"><oj-bind-text value="[[ $current.data.value ]]"></oj-bind-text></span>
-              </li>
+    <!-- ============ Open requests ============ -->
+    <oj-defer slot="open">
+      <oj-sp-dashboard-grid layout="hero-plus">
+        <oj-sp-dashboard-panel panel-title="Requests by status" slot="">
+          <oj-chart class="mx-chart" type="pie"
+            data="[[ $variables.statusADP ]]"
+            selection-mode="none"
+            hover-behavior="dim"
+            legend.position="end"
+            style-defaults.pie-inner-radius="0.7"
+            pie-center.label="[[ $variables.model.totalRequests + '' ]]"
+            aria-label="Requests by status">
+            <template slot="itemTemplate" data-oj-as="item">
+              <oj-chart-item value="[[ item.data.value ]]" series-id="[[ item.data.series ]]"
+                group-id="[[ [item.data.group] ]]" color="[[ item.data.color ]]"></oj-chart-item>
             </template>
-          </oj-bind-for-each>
-        </ul>
-      </div>
-    </section>
+          </oj-chart>
+        </oj-sp-dashboard-panel>
 
-    <section class="mx-card">
-      <header class="mx-card-head">
-        <h2 class="mx-card-title">Requests raised per week</h2>
-        <span class="mx-card-hint">last 8 weeks, by priority</span>
-      </header>
-      <oj-chart class="mx-bar-chart" type="bar" stack="on"
-        data="[[ $variables.weeklyADP ]]"
-        selection-mode="none"
-        hover-behavior="dim"
-        animation-on-display="auto"
-        animation-on-data-change="auto"
-        legend.position="bottom"
-        style-defaults.bar-gap-ratio="0.45"
-        y-axis.major-tick.line-color="#ebe8e4"
-        aria-label="Requests raised per week by priority">
-        <template slot="itemTemplate" data-oj-as="item">
-          <oj-chart-item
-            value="[[ item.data.value ]]"
-            series-id="[[ item.data.series ]]"
-            group-id="[[ [item.data.group] ]]"
-            color="[[ item.data.color ]]">
-          </oj-chart-item>
-        </template>
-      </oj-chart>
-    </section>
-  </div>
+        <oj-sp-dashboard-panel panel-title="Requests raised per week, by priority" slot="">
+          <oj-chart class="mx-chart" type="bar" stack="on"
+            data="[[ $variables.weeklyADP ]]"
+            selection-mode="none"
+            hover-behavior="dim"
+            legend.position="bottom"
+            aria-label="Requests raised per week by priority">
+            <template slot="itemTemplate" data-oj-as="item">
+              <oj-chart-item value="[[ item.data.value ]]" series-id="[[ item.data.series ]]"
+                group-id="[[ [item.data.group] ]]" color="[[ item.data.color ]]"></oj-chart-item>
+            </template>
+          </oj-chart>
+        </oj-sp-dashboard-panel>
 
-  <!-- ============ Attention, health, PM ============ -->
-  <div class="mx-grid mx-grid--3">
-    <section class="mx-card">
-      <header class="mx-card-head">
-        <h2 class="mx-card-title">Needs attention</h2>
-        <span class="mx-card-hint"><oj-bind-text value="[[ $variables.model.attention.length + ' items' ]]"></oj-bind-text></span>
-      </header>
-      <ul class="mx-attention">
-        <oj-bind-for-each data="[[ $variables.model.attention ]]">
-          <template>
-            <li>
-              <button type="button" :class="[[ 'mx-attention-row is-' + $current.data.tone ]]" on-click="[[$listeners.goTo]]">
-                <span class="mx-attention-mark" aria-hidden="true"></span>
-                <span class="mx-attention-text">
-                  <span class="mx-attention-title"><oj-bind-text value="[[ $current.data.title ]]"></oj-bind-text></span>
-                  <span class="mx-attention-sub"><oj-bind-text value="[[ $current.data.text ]]"></oj-bind-text></span>
-                </span>
-                <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 6l6 6-6 6"></path></svg>
-              </button>
-            </li>
-          </template>
-        </oj-bind-for-each>
-      </ul>
-      <oj-bind-if test="[[ $variables.model.attention.length === 0 ]]">
-        <p class="mx-empty-line">Nothing needs attention right now.</p>
-      </oj-bind-if>
-    </section>
+        <oj-sp-dashboard-panel panel-title="Latest requests" slot="">
+          <ul class="mx-list">
+            <oj-bind-for-each data="[[ $variables.model.recent ]]">
+              <template>
+                <li class="mx-list-row">
+                  <span class="mx-list-main">
+                    <button type="button" class="mx-link" on-click="[[$listeners.openRequest]]"><oj-bind-text value="[[ $current.data.id ]]"></oj-bind-text></button>
+                    <span class="mx-block"><oj-bind-text value="[[ $current.data.title ]]"></oj-bind-text></span>
+                  </span>
+                  <span :class="[[ $application.functions.badgeClass($current.data.status) ]]"><oj-bind-text value="[[ $current.data.status ]]"></oj-bind-text></span>
+                </li>
+              </template>
+            </oj-bind-for-each>
+          </ul>
+          <oj-button chroming="borderless" on-oj-action="[[$listeners.openRequests]]">View all requests</oj-button>
+        </oj-sp-dashboard-panel>
+      </oj-sp-dashboard-grid>
+    </oj-defer>
 
-    <section class="mx-card">
-      <header class="mx-card-head">
-        <h2 class="mx-card-title">Equipment health</h2>
-        <span class="mx-card-hint">average by category</span>
-      </header>
-      <ul class="mx-health-list">
-        <oj-bind-for-each data="[[ $variables.model.health ]]">
-          <template>
-            <li class="mx-health-row">
-              <span :class="[[ 'mx-cat-dot is-' + $current.data.key ]]" aria-hidden="true"></span>
-              <span class="mx-health-name">
-                <oj-bind-text value="[[ $current.data.category ]]"></oj-bind-text>
-                <span class="mx-muted"><oj-bind-text value="[[ ' · ' + $current.data.count + ' assets' + ($current.data.down ? ', ' + $current.data.down + ' down' : '') ]]"></oj-bind-text></span>
-              </span>
-              <span class="mx-health-pct"><oj-bind-text value="[[ $current.data.avg + '%' ]]"></oj-bind-text></span>
-              <span class="mx-meter" aria-hidden="true">
-                <span :class="[[ 'mx-meter-fill is-' + $current.data.tone ]]" :style.width="[[ $current.data.avg + '%' ]]"></span>
-              </span>
-            </li>
-          </template>
-        </oj-bind-for-each>
-      </ul>
-    </section>
+    <!-- ============ Awaiting approval ============ -->
+    <oj-defer slot="approval">
+      <oj-sp-dashboard-grid>
+        <oj-sp-dashboard-panel panel-title="Waiting, by approver" slot="">
+          <oj-chart class="mx-chart" type="bar" orientation="horizontal"
+            data="[[ $variables.approverADP ]]"
+            selection-mode="none"
+            legend.rendered="off"
+            aria-label="Requests waiting by approver">
+            <template slot="itemTemplate" data-oj-as="item">
+              <oj-chart-item value="[[ item.data.value ]]" series-id="[[ item.data.series ]]"
+                group-id="[[ [item.data.group] ]]" color="[[ item.data.color ]]"></oj-chart-item>
+            </template>
+          </oj-chart>
+        </oj-sp-dashboard-panel>
 
-    <section class="mx-card">
-      <header class="mx-card-head">
-        <h2 class="mx-card-title">Preventive maintenance due</h2>
-        <button type="button" class="mx-link" on-click="[[$listeners.goEquipment]]">Equipment</button>
-      </header>
-      <ul class="mx-pm-list">
-        <oj-bind-for-each data="[[ $variables.model.upcomingPm ]]">
-          <template>
-            <li class="mx-pm-row">
-              <span :class="[[ 'mx-date-chip' + ($current.data.soon ? ' is-soon' : '') ]]">
-                <span class="mx-date-day"><oj-bind-text value="[[ $current.data.day ]]"></oj-bind-text></span>
-                <span class="mx-date-month"><oj-bind-text value="[[ $current.data.month ]]"></oj-bind-text></span>
-              </span>
-              <span class="mx-pm-text">
-                <span class="mx-pm-name"><oj-bind-text value="[[ $current.data.name ]]"></oj-bind-text></span>
-                <span class="mx-muted"><oj-bind-text value="[[ $current.data.location ]]"></oj-bind-text></span>
-              </span>
-              <span class="mx-pm-when"><oj-bind-text value="[[ $current.data.when ]]"></oj-bind-text></span>
-            </li>
-          </template>
-        </oj-bind-for-each>
-      </ul>
-    </section>
-  </div>
+        <oj-sp-dashboard-panel panel-title="Waiting longest" slot="">
+          <oj-bind-if test="[[ $variables.model.waitingLongest.length === 0 ]]">
+            <p class="oj-text-color-secondary">Nothing is waiting for approval.</p>
+          </oj-bind-if>
+          <ul class="mx-list">
+            <oj-bind-for-each data="[[ $variables.model.waitingLongest ]]">
+              <template>
+                <li class="mx-list-row">
+                  <span class="mx-list-main">
+                    <button type="button" class="mx-link" on-click="[[$listeners.openRequest]]"><oj-bind-text value="[[ $current.data.id ]]"></oj-bind-text></button>
+                    <span class="mx-block"><oj-bind-text value="[[ $current.data.title ]]"></oj-bind-text></span>
+                    <span class="mx-block oj-text-color-secondary"><oj-bind-text value="[[ 'Waiting for ' + $current.data.waitingFor ]]"></oj-bind-text></span>
+                  </span>
+                  <span class="mx-list-side">
+                    <span :class="[[ $application.functions.priorityBadgeClass($current.data.priority) ]]"><oj-bind-text value="[[ $current.data.priority ]]"></oj-bind-text></span>
+                    <span class="mx-block oj-text-color-secondary"><oj-bind-text value="[[ $current.data.ageDays === 0 ? 'today' : $current.data.ageDays + ' ' + $application.functions.plural($current.data.ageDays, 'day', 'days') ]]"></oj-bind-text></span>
+                  </span>
+                </li>
+              </template>
+            </oj-bind-for-each>
+          </ul>
+          <oj-button chroming="borderless" on-oj-action="[[$listeners.openInbox]]">Open the approval inbox</oj-button>
+        </oj-sp-dashboard-panel>
+      </oj-sp-dashboard-grid>
+    </oj-defer>
 
-  <!-- ============ Recent requests ============ -->
-  <section class="mx-card">
-    <header class="mx-card-head">
-      <h2 class="mx-card-title">Recent requests</h2>
-      <button type="button" class="mx-link" on-click="[[$listeners.goRequests]]">Open my requests</button>
-    </header>
-    <ul class="mx-recent">
-      <oj-bind-for-each data="[[ $variables.model.recent ]]">
-        <template>
-          <li class="mx-recent-row">
-            <span class="mx-recent-id"><oj-bind-text value="[[ $current.data.id ]]"></oj-bind-text></span>
-            <span class="mx-recent-main">
-              <span class="mx-recent-title"><oj-bind-text value="[[ $current.data.title ]]"></oj-bind-text></span>
-              <span class="mx-muted"><oj-bind-text value="[[ $current.data.equipmentName + ' · ' + $current.data.requestedBy ]]"></oj-bind-text></span>
-            </span>
-            <span :class="[[ 'mx-pri is-' + $application.functions.priorityTone($current.data.priority) ]]"><oj-bind-text value="[[ $current.data.priority ]]"></oj-bind-text></span>
-            <span :class="[[ 'mx-pill is-' + $application.functions.statusTone($current.data.status) ]]"><oj-bind-text value="[[ $current.data.status ]]"></oj-bind-text></span>
-            <span class="mx-recent-when"><oj-bind-text value="[[ $application.functions.fmtDateTime($current.data.requestedOn) ]]"></oj-bind-text></span>
-          </li>
-        </template>
-      </oj-bind-for-each>
-    </ul>
-  </section>
-</div>
+    <!-- ============ Equipment availability ============ -->
+    <oj-defer slot="availability">
+      <oj-sp-dashboard-grid>
+        <oj-sp-dashboard-panel panel-title="Average health by category" slot="">
+          <oj-chart class="mx-chart" type="bar" orientation="horizontal"
+            data="[[ $variables.healthADP ]]"
+            selection-mode="none"
+            legend.rendered="off"
+            y-axis.max="100"
+            aria-label="Average equipment health by category">
+            <template slot="itemTemplate" data-oj-as="item">
+              <oj-chart-item value="[[ item.data.value ]]" series-id="[[ item.data.series ]]"
+                group-id="[[ [item.data.group] ]]" color="[[ item.data.color ]]"></oj-chart-item>
+            </template>
+          </oj-chart>
+        </oj-sp-dashboard-panel>
+
+        <oj-sp-dashboard-panel panel-title="Equipment down" slot="">
+          <oj-bind-if test="[[ $variables.model.downList.length === 0 ]]">
+            <p class="oj-text-color-secondary">All equipment is running.</p>
+          </oj-bind-if>
+          <ul class="mx-list">
+            <oj-bind-for-each data="[[ $variables.model.downList ]]">
+              <template>
+                <li class="mx-list-row">
+                  <span class="mx-list-main">
+                    <span class="mx-block oj-typography-semi-bold"><oj-bind-text value="[[ $current.data.name ]]"></oj-bind-text></span>
+                    <span class="mx-block oj-text-color-secondary"><oj-bind-text value="[[ $current.data.id + ' · ' + $current.data.location ]]"></oj-bind-text></span>
+                  </span>
+                  <span class="mx-list-side oj-text-color-secondary"><oj-bind-text value="[[ $current.data.text ]]"></oj-bind-text></span>
+                </li>
+              </template>
+            </oj-bind-for-each>
+          </ul>
+          <oj-button chroming="borderless" on-oj-action="[[$listeners.openEquipment]]">Browse equipment</oj-button>
+        </oj-sp-dashboard-panel>
+      </oj-sp-dashboard-grid>
+    </oj-defer>
+
+    <!-- ============ Active work orders ============ -->
+    <oj-defer slot="wo">
+      <oj-sp-dashboard-grid>
+        <oj-sp-dashboard-panel panel-title="Work orders by status" slot="">
+          <oj-chart class="mx-chart" type="pie"
+            data="[[ $variables.woADP ]]"
+            selection-mode="none"
+            hover-behavior="dim"
+            legend.position="end"
+            style-defaults.pie-inner-radius="0.7"
+            pie-center.label="[[ $variables.model.totalWorkOrders + '' ]]"
+            aria-label="Work orders by status">
+            <template slot="itemTemplate" data-oj-as="item">
+              <oj-chart-item value="[[ item.data.value ]]" series-id="[[ item.data.series ]]"
+                group-id="[[ [item.data.group] ]]" color="[[ item.data.color ]]"></oj-chart-item>
+            </template>
+          </oj-chart>
+        </oj-sp-dashboard-panel>
+
+        <oj-sp-dashboard-panel panel-title="In progress" slot="">
+          <oj-bind-if test="[[ $variables.model.woActive.length === 0 ]]">
+            <p class="oj-text-color-secondary">No work in progress.</p>
+          </oj-bind-if>
+          <ul class="mx-list">
+            <oj-bind-for-each data="[[ $variables.model.woActive ]]">
+              <template>
+                <li class="mx-list-row mx-list-row--stack">
+                  <span class="mx-block oj-typography-semi-bold"><oj-bind-text value="[[ $current.data.id + ' · ' + $current.data.title ]]"></oj-bind-text></span>
+                  <span class="mx-block oj-text-color-secondary"><oj-bind-text value="[[ $current.data.equipmentName + ' · ' + $current.data.technician ]]"></oj-bind-text></span>
+                  <oj-progress-bar class="mx-progress" value="[[ $current.data.progress ]]" max="100"
+                    :aria-label="[[ $current.data.id + ' progress' ]]"></oj-progress-bar>
+                </li>
+              </template>
+            </oj-bind-for-each>
+          </ul>
+          <oj-button chroming="borderless" on-oj-action="[[$listeners.openWorkOrders]]">Open work orders</oj-button>
+        </oj-sp-dashboard-panel>
+      </oj-sp-dashboard-grid>
+    </oj-defer>
+
+    <!-- ============ Preventive maintenance ============ -->
+    <oj-defer slot="pm">
+      <oj-sp-dashboard-grid>
+        <oj-sp-dashboard-panel panel-title="Due in the next 14 days" slot="">
+          <oj-bind-if test="[[ $variables.model.upcomingPm.length === 0 ]]">
+            <p class="oj-text-color-secondary">Nothing due in the next two weeks.</p>
+          </oj-bind-if>
+          <ul class="mx-list">
+            <oj-bind-for-each data="[[ $variables.model.upcomingPm ]]">
+              <template>
+                <li class="mx-list-row">
+                  <span class="mx-date" aria-hidden="true">
+                    <span class="mx-date-day"><oj-bind-text value="[[ $current.data.day ]]"></oj-bind-text></span>
+                    <span class="mx-date-month"><oj-bind-text value="[[ $current.data.month ]]"></oj-bind-text></span>
+                  </span>
+                  <span class="mx-list-main">
+                    <span class="mx-block oj-typography-semi-bold"><oj-bind-text value="[[ $current.data.name ]]"></oj-bind-text></span>
+                    <span class="mx-block oj-text-color-secondary"><oj-bind-text value="[[ $current.data.location ]]"></oj-bind-text></span>
+                  </span>
+                  <span :class="[[ $current.data.soon ? 'oj-badge oj-badge-warning' : 'oj-badge oj-badge-subtle' ]]"><oj-bind-text value="[[ $current.data.when ]]"></oj-bind-text></span>
+                </li>
+              </template>
+            </oj-bind-for-each>
+          </ul>
+        </oj-sp-dashboard-panel>
+
+        <oj-sp-dashboard-panel panel-title="Overdue" slot="">
+          <oj-bind-if test="[[ $variables.model.overduePm.length === 0 ]]">
+            <p class="oj-text-color-secondary">No preventive maintenance is overdue.</p>
+          </oj-bind-if>
+          <ul class="mx-list">
+            <oj-bind-for-each data="[[ $variables.model.overduePm ]]">
+              <template>
+                <li class="mx-list-row">
+                  <span class="mx-list-main">
+                    <span class="mx-block oj-typography-semi-bold"><oj-bind-text value="[[ $current.data.name ]]"></oj-bind-text></span>
+                    <span class="mx-block oj-text-color-secondary"><oj-bind-text value="[[ $current.data.id + ' · ' + $current.data.location ]]"></oj-bind-text></span>
+                  </span>
+                  <span class="oj-badge oj-badge-danger"><oj-bind-text value="[[ $current.data.when ]]"></oj-bind-text></span>
+                </li>
+              </template>
+            </oj-bind-for-each>
+          </ul>
+          <oj-button chroming="borderless" on-oj-action="[[$listeners.openEquipment]]">Browse equipment</oj-button>
+        </oj-sp-dashboard-panel>
+      </oj-sp-dashboard-grid>
+    </oj-defer>
+
+  </oj-switcher>
+</oj-sp-dashboard-landing-page>

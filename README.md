@@ -1,108 +1,123 @@
-# Maintenance module: Oracle Visual Builder sample (Redwood style)
+# Maintenance module: Oracle Visual Builder sample on Redwood page templates
 
-A maintenance management app built as a standard Visual Builder web app, so you can develop it in
-VS Code, test it locally, then bring it into VB Studio. It runs entirely on sample data stored in
-the browser, so no backend is needed.
+A maintenance management app built with **Oracle's own Redwood page templates** (the `oj-sp`
+components that Fusion Applications and VB Studio's Redwood starter use), so it looks and behaves
+like an Oracle Redwood app. It runs on sample data stored in the browser, so no backend is needed.
+
+> The earlier version with a hand-styled sliding menu is on the `feature/maintenance-redwood` branch.
 
 **What's inside**
 
-| Screen | What it shows |
-|---|---|
-| Dashboard | Welcome banner, 5 KPIs, quick actions, requests-by-status donut, requests per week by priority, needs attention, equipment health, PM due, recent requests |
-| Raise request | Form with validation (equipment, title, description, type, priority, needed by, cost, equipment down), plus a live equipment card and the approval route the request will follow |
-| My requests | Status chips with counts, Everyone / Raised by me, table, and a side drawer with the approval steps and timeline |
-| Send for approval | Pick drafts, see who approves each one, add a note, send |
-| Browse equipment | Search, category chips, status filter, card or table view, and a side drawer with specs and maintenance history |
-| Approval inbox | "Acting as" role tabs (supervisor, plant manager, HSE officer), approve, or reject with a required reason |
-| Work orders | Board with Scheduled, In progress and Completed lanes; start and complete work |
+| Menu item | Redwood template | What it shows |
+|---|---|---|
+| Home | Welcome page (`oj-sp-welcome-page`) | Greeting banner with **Raise request** and **Browse equipment**, then object cards for what needs attention, shortcuts (Send for approval, Approval inbox, Work orders) and the latest requests |
+| Dashboard | Dashboard landing page (`oj-sp-dashboard-landing-page`, `oj-sp-scoreboard`, `oj-sp-dashboard-grid`, `oj-sp-dashboard-panel`) | Five KPIs; selecting one shows its panels: requests by status and per week, approvals waiting, equipment health and what is down, work orders, preventive maintenance due and overdue |
+| Requests | Smart search page (`oj-sp-smart-search-page`) | Search, status and "raised by" filters, the requests table, and a drawer (`oj-sp-general-drawer-template`) with the approval route and timeline |
+| ↳ Raise request | Simple create and edit (`oj-sp-simple-create-edit`) | Validated form, the selected equipment, and the approval route that updates as you type |
+| ↳ Send for approval | Simple create and edit | Tick drafts, see who approves each one, add a note, send |
+| Equipment | Smart search page + object cards | Search, category and status filters, cards or table, and a drawer with specs and history |
+| Approvals | Smart search page | "Acting as" supervisor, plant manager or HSE officer; approve, or reject with a required reason |
+| Work orders | Smart search page | Board with Scheduled, In progress and Completed lanes; start and complete work |
 
-The app shell has a Redwood-style header and a **sliding left menu** (`oj-drawer-layout`) with
-badge counts. On small screens the menu slides over the page.
+The shell is the same as VB's Redwood starter: `oj-sp-pillar-theme` around everything and
+**`oj-sp-in-app-navigation`** to move between the six areas.
 
 **Approval rules** (worked out per request):
 1. Maintenance supervisor approves every request.
 2. Plant manager also approves when the priority is Critical or the cost is AED 10,000 or more.
 3. HSE officer also approves Safety requests.
 
-The last approval creates a work order automatically. Completing the work order closes the request
-and puts the equipment back in service.
+The last approval creates a work order. Completing the work order closes the request and puts the
+equipment back in service.
 
 ---
 
 ## 1. Run it locally
 
-You need **Node.js 20** (Oracle's build tools fail on Node 24 with `Unexpected identifier 'assert'`)
-and Git.
+You need **Node.js 20** and Git. The build tools are now the 25.10 ones (the same as Oracle's
+Redwood starter app), so run `npm install` again after you switch to this branch.
 
 ```powershell
-cd C:\javeed
-git clone https://github.com/javeedin/oraclevbcs.git
-cd oraclevbcs
-git checkout feature/maintenance-redwood
+cd C:\javeed\oraclevbcs
+git fetch
+git checkout feature/maintenance-redwood-templates
 
-# If "node -v" shows v24, put the portable Node 20 first for this window:
+# Put the portable Node 20 first for this window:
 $env:Path = "C:\tools\node20;" + $env:Path
 node -v
 
 npm install
-npx grunt vb-process-local
-npx grunt vb-serve:webApps/maint --port=8888 --open
+npm run serve
 ```
 
-The browser opens the dashboard. `vb-serve` keeps running until you press **Ctrl+C**.
-JET and the VB runtime load from Oracle's CDN, so you need to be online.
+`npm run serve` cleans, builds and opens **http://localhost:8888**. It keeps running until you
+press **Ctrl+C**. The Redwood templates, JET and the VB runtime all load from Oracle's CDN
+(static.oracle.com), so you need to be online.
+
+**If the build stops and asks for a Component Exchange URL**, run this instead:
+
+```powershell
+npm run serve:cdn
+```
+
+It builds from a copy of the app without the component list, and the templates still load from
+Oracle's CDN through the mapping in `app-flow.json`. Nothing in your sources changes.
 
 In VS Code the same steps are tasks: **Terminal > Run Task > VB: install build tools**, then
-**VB: local preview (port 8888)**. **Ctrl+Shift+B** runs the build check.
+**VB: local preview (port 8888)** (or the *Redwood from CDN only* variant).
 
 ### A five-minute test
 
-1. **Dashboard:** click a KPI or a quick action; the menu highlight follows you.
-2. **Hide menu:** use the button at the top left. The menu slides away, and back again.
-3. **Browse equipment:** search "krones", pick the HVAC chip, switch to Table. Open an asset, then
-   click **Raise request for this asset**.
+1. **Home:** the banner greets you and shows what is waiting. Click a card, for example a
+   critical request, and the app opens the right place.
+2. **Dashboard:** click each KPI in the scoreboard; the panels below change.
+3. **Equipment:** search "krones", pick the HVAC category, switch to Table. Open an asset, then
+   **Raise request for this asset**.
 4. **Raise request:** the equipment is already chosen. Set priority to **Critical** and type to
-   **Safety** and watch the approval route grow to three steps. **Submit for approval.**
-5. **Approval inbox:** approve it as Maintenance supervisor, then switch to Plant manager and
-   HSE officer and approve again. A toast tells you the work order was created.
+   **Safety**; the approval route grows to three steps. **Save**. Requests opens with your
+   request in the drawer.
+5. **Approvals:** approve it as Maintenance supervisor, then switch "Acting as" to Plant manager
+   and HSE officer. The last approval creates a work order.
 6. **Work orders:** **Start work**, then **Mark complete**.
-7. **My requests:** open your request to see every step on the timeline.
-8. Try **Reject** in the inbox without a reason (it refuses), then with one.
+7. **Requests:** use the banner to **Send for approval** your drafts.
+8. Try **Reject** in Approvals without a reason (it refuses), then with one.
 
-Your changes are saved in the browser. **Reset sample data** at the bottom of the menu starts
-again.
+**Reset sample data** in the header starts again.
 
 ## 2. Bring it into VB Studio
 
-1. In VB Studio, create a project with a Git repository and choose to **import an existing
-   repository**, pointing it at this GitHub repo and branch (or push this branch to the project's
-   repository).
-2. Create a workspace on that repository and open the visual application in the Designer.
-3. Press **Preview**. The Designer's preview is the reference; the local `vb-serve` run is the quick check.
-4. VB Studio may update `package.json` to match your instance's build-tools version. Keep that
-   change. Oracle documents the current build tools for Node 20 or 22.
+Import the zip as a new workspace (or push this branch to the workspace's repository), open the
+visual application and press **Preview**.
+
+- VB Studio may offer to **upgrade** the application and the Redwood components to your
+  instance's version. Accept both: the runtime and the `oj-sp` components are upgraded together.
+- In the Designer, the Redwood templates show up in **Create Page**, and the Redwood components in
+  the Components palette, because `settings/dependencies.json` lists them.
 
 Don't edit the same page in the Designer and in VS Code at the same time: pull, edit, push.
 
 ## 3. Project structure
 
 ```
+visual-application.json           VB 25.10 runtime, JET 18.1.4
+settings/dependencies.json        Redwood (oj-sp) components available to the app
 webApps/maint/
-  app-flow.json / app-flow.js     app variables + the sample data store and formatters
-  pages/shell-page.*              header, sliding menu, toasts, router
-  flows/dashboard/                overview page
-  flows/request/                  raise-request page
-  flows/requests/                 my-requests page
-  flows/approval/                 send-approval page
+  app-flow.json                   requirejs mapping for oj-sp on Oracle's CDN, app variables
+  app-flow.js                     loads oj-sp/spectra-shell/config/config + the sample data store
+  settings/dependencies.json      Redwood components this web app uses
+  pages/shell-page.*              pillar theme, header, in-app navigation, toasts, router
+  flows/home/                     welcome page
+  flows/dashboard/                dashboard landing page
+  flows/requests/                 my-requests, raise-request, send-approval pages
   flows/equipment/                browse-equipment page
   flows/inbox/                    approval-inbox page
   flows/workorders/               work-orders page
-  resources/css/app.css           Redwood-style look (mx- classes, --mx- tokens)
+  resources/css/app.css           layout inside the templates (mx- classes, Redwood variables)
 ```
 
-Each page is `<name>-page.json` (variables, listeners, component imports), `<name>-page.html`
-(JET components and markup), `<name>-page.js` (page functions) and `<name>-page-chains/`
-(one JavaScript action chain per file). `CLAUDE.md` lists the conventions.
+Each page is `<name>-page.json` (variables, listeners, component imports), `<name>-page.html`,
+`<name>-page.js` (page functions) and `<name>-page-chains/` (one JavaScript action chain per
+file). `CLAUDE.md` lists the conventions.
 
 ## 4. Going live with real data
 
@@ -124,15 +139,19 @@ The approval rules then move to PL/SQL, so the route is decided on the server.
 
 ## 5. How this was checked
 
-The VB runtime can't run outside a browser with Oracle's CDN, so before pushing:
+The Redwood templates come from Oracle's CDN and can only render in a browser, so before pushing:
 
-- every JSON file parses, every listener points to an existing chain, every JET tag is imported,
-  and every variable, function, flow and CSS class referenced actually exists;
+- the template markup (attributes, slots, events, component paths and versions) follows Oracle's
+  Redwood sample applications; the one attribute not seen there is `primary-action.label` on the
+  create and edit pages (if your version ignores it, the button simply says **Save**);
+- every JSON file parses, every listener points to an existing chain with matching parameters,
+  every component is imported and listed in `dependencies.json`, and every variable, function,
+  flow, page and CSS class referenced exists;
 - ESLint passes on all page modules and chains;
-- every action chain was run against a mock VB context, and every binding in the HTML (including
-  inside for-each, table and chart templates) was evaluated against the resulting data;
-- the full journey (raise, three approvals, work order, complete; and reject with and without a
-  reason) was run through the real chains.
+- every chain was run against a mock VB context, every binding in the HTML (including inside
+  list, table, chart and for-each templates) was evaluated against the resulting data, and every
+  listener was fired;
+- the full journey (raise, three approvals, work order, complete; send drafts; reject with and
+  without a reason; raise from an asset) was run through the real chains.
 
-The first true test of the JET rendering is `vb-serve` or the Designer preview. If anything shows
-an error there, the browser console (F12) has the details.
+If anything shows an error in the browser, the console (F12) has the details.

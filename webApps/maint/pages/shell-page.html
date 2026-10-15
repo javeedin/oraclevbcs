@@ -1,89 +1,43 @@
-<div id="pageContent" class="vb-web-applayout-page mx-shell">
+<!--
+  Shell, laid out like Visual Builder's Redwood starter application:
+  oj-sp-pillar-theme wraps everything, the flows render in oj-vb-content,
+  and oj-sp-in-app-navigation switches between them.
+-->
+<div id="pageContent">
+  <oj-sp-pillar-theme id="ojspPillarTheme" pillar="gbu" theme="default" mode="mixed"
+    base-appearance-theme="Redwood" ask-oracle="off">
+    <div class="oj-web-applayout-page">
 
-  <!-- ============ Redwood-style global header ============ -->
-  <header class="mx-header">
-    <oj-button class="mx-menu-btn" display="icons" chroming="borderless" on-oj-action="[[$listeners.toggleNav]]">
-      <svg slot="startIcon" viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" aria-hidden="true">
-        <path d="M4 6.5h16M4 12h16M4 17.5h16"></path>
-      </svg>
-      <oj-bind-text value="[[ $variables.navOpen ? 'Hide menu' : 'Show menu' ]]"></oj-bind-text>
-    </oj-button>
+      <header class="mx-appbar" role="banner">
+        <button type="button" class="mx-appbar-brand" on-click="[[$listeners.goHome]]" aria-label="Maintenance home">
+          <span class="oj-ux-ico-box mx-appbar-logo" aria-hidden="true"></span>
+          <span class="oj-typography-body-md oj-typography-semi-bold">Maintenance</span>
+        </button>
+        <span class="oj-badge oj-badge-subtle oj-badge-info mx-appbar-tag">Sample data</span>
+        <span class="mx-appbar-spacer"></span>
+        <oj-button chroming="borderless" on-oj-action="[[$listeners.bellClick]]"
+          :title="[[ $application.variables.counts.pending + ' ' + $application.functions.plural($application.variables.counts.pending, 'request is', 'requests are') + ' waiting for approval' ]]">
+          <oj-bind-text value="[[ 'Approvals (' + $application.variables.counts.pending + ')' ]]"></oj-bind-text>
+        </oj-button>
+        <oj-button chroming="borderless" on-oj-action="[[$listeners.resetDemo]]" title="Put the sample data back to how it started">Reset sample data</oj-button>
+        <oj-avatar class="mx-appbar-avatar" size="xs" initials="DU" role="img" aria-label="Demo user" title="Demo user"></oj-avatar>
+      </header>
 
-    <div class="mx-brand">
-      <span class="mx-brand-mark" aria-hidden="true">
-        <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
-          <path d="M14.7 6.3a4 4 0 0 0-5.3 5.3l-5.9 5.9a1.5 1.5 0 0 0 2.1 2.1l5.9-5.9a4 4 0 0 0 5.3-5.3l-2.4 2.4-2.1-.4-.4-2.1z"></path>
-        </svg>
-      </span>
-      <span class="mx-brand-text">
-        <span class="mx-brand-name">Maintenance</span>
-        <span class="mx-brand-org">Facilities and plant</span>
-      </span>
-    </div>
-    <span class="mx-env-badge">Sample data</span>
+      <div class="oj-web-applayout-content-nopad oj-sm-margin-4x">
+        <!-- Toasts: chains set $application.variables.messages -->
+        <oj-messages messages="[[ $application.variables.messages ]]" display="notification" position="{}"></oj-messages>
 
-    <div class="mx-header-spacer"></div>
+        <div>
+          <!-- Renders the selected flow -->
+          <oj-vb-content id="vbRouterContent" class="oj-sm-12" config="[[vbRouterFlow]]"></oj-vb-content>
 
-    <button type="button" class="mx-header-icon" on-click="[[$listeners.bellClick]]"
-      :aria-label="[[ $application.variables.counts.pending + ' requests awaiting approval' ]]"
-      :title="[[ $application.variables.counts.pending + ' requests awaiting approval' ]]">
-      <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-        <path d="M6 16.5V11a6 6 0 1 1 12 0v5.5l1.5 2h-15zM10 20.5a2 2 0 0 0 4 0"></path>
-      </svg>
-      <oj-bind-if test="[[ $application.variables.counts.pending > 0 ]]">
-        <span class="mx-dot-badge"><oj-bind-text value="[[ $application.variables.counts.pending ]]"></oj-bind-text></span>
-      </oj-bind-if>
-    </button>
-
-    <div class="mx-user">
-      <oj-avatar size="xs" initials="DU" aria-hidden="true"></oj-avatar>
-      <span class="mx-user-text">
-        <span class="mx-user-name">Demo user</span>
-        <span class="mx-user-role">Requester</span>
-      </span>
-    </div>
-  </header>
-
-  <!-- ============ Sliding menu (start drawer) + page area ============ -->
-  <oj-drawer-layout class="mx-layout" start-opened="{{ $variables.navOpen }}" start-display="auto">
-
-    <div class="mx-main">
-      <!-- Renders the current flow (dashboard, request, equipment, ...) -->
-      <oj-vb-content id="vbRouterContent" class="vb-pages-module mx-router" config="[[vbRouterFlow]]"></oj-vb-content>
-    </div>
-
-    <div slot="start" class="mx-drawer">
-      <nav class="mx-nav" aria-label="Maintenance menu">
-        <oj-bind-for-each data="[[ $variables.menu ]]">
-          <template>
-            <oj-bind-if test="[[ $current.data.section ]]">
-              <p class="mx-nav-section"><oj-bind-text value="[[ $current.data.section ]]"></oj-bind-text></p>
-            </oj-bind-if>
-            <button type="button"
-              :class="[[ 'mx-nav-item' + ($application.variables.activeNav === $current.data.flow ? ' is-active' : '') ]]"
-              :aria-current="[[ $application.variables.activeNav === $current.data.flow ? 'page' : 'false' ]]"
-              on-click="[[$listeners.navItemClick]]">
-              <svg class="mx-nav-icon" viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-                <path :d="[[ $current.data.icon ]]"></path>
-              </svg>
-              <span class="mx-nav-label"><oj-bind-text value="[[ $current.data.label ]]"></oj-bind-text></span>
-              <oj-bind-if test="[[ $current.data.badge && $application.variables.counts[$current.data.badge] > 0 ]]">
-                <span :class="[[ 'mx-nav-badge' + ($current.data.badgeTone ? ' is-' + $current.data.badgeTone : '') ]]">
-                  <oj-bind-text value="[[ $application.variables.counts[$current.data.badge] ]]"></oj-bind-text>
-                </span>
-              </oj-bind-if>
-            </button>
-          </template>
-        </oj-bind-for-each>
-      </nav>
-
-      <div class="mx-nav-footer">
-        <p class="mx-nav-note">Sample data is saved in this browser, so your changes survive a reload.</p>
-        <button type="button" class="mx-link-btn" on-click="[[$listeners.resetDemo]]">Reset sample data</button>
+          <!-- Redwood in-app navigation: one item per flow, highlighted from the current flow -->
+          <oj-sp-in-app-navigation
+            navigation-data="[[ $variables.navigationADP ]]"
+            selection="{{ $page.currentFlow }}"
+            on-sp-selection-action="[[$listeners.navigationSelection]]"></oj-sp-in-app-navigation>
+        </div>
       </div>
     </div>
-  </oj-drawer-layout>
-
-  <!-- Toasts raised by any page through $application.variables.messages -->
-  <oj-messages class="mx-toasts" messages="[[ $application.variables.messages ]]" display="notification" position="{}"></oj-messages>
+  </oj-sp-pillar-theme>
 </div>

@@ -1,61 +1,60 @@
-<div class="mx-page">
+<!--
+  Approval inbox: Oracle's Redwood smart search page template.
+  "Acting as" switches the approver role; each waiting request is a Redwood panel with Approve and Reject.
+-->
+<oj-sp-smart-search-page class="oj-flex-item oj-sm-12 oj-md-12" display-mode="mixed"
+  page-title="Approval inbox"
+  page-subtitle="Approving moves a request to its next approver, or creates the work order on the last step">
 
-  <header class="mx-page-head">
-    <p class="mx-crumb">Approvals <span aria-hidden="true">/</span> Inbox</p>
-    <h1 class="mx-page-title">Approval inbox</h1>
-    <p class="mx-page-sub">Pick the role you are acting as. Approving moves a request to its next approver, or creates the work order when it is the last step.</p>
-  </header>
+  <oj-input-search slot="search" class="oj-form-control-width-md"
+    value="{{ $variables.search }}"
+    placeholder="Search waiting requests"
+    aria-label="Search waiting requests"
+    on-raw-value-changed="[[$listeners.searchChanged]]"></oj-input-search>
 
-  <!-- ============ Acting as ============ -->
-  <section class="mx-role-tabs" role="group" aria-label="Acting as">
-    <span class="mx-role-label">Acting as</span>
-    <oj-bind-for-each data="[[ $variables.roleTabs ]]">
-      <template>
-        <button type="button" :class="[[ 'mx-role-tab' + ($current.data.selected ? ' is-selected' : '') ]]"
-          :aria-pressed="[[ $current.data.selected ? 'true' : 'false' ]]" on-click="[[$listeners.roleClick]]">
-          <span class="mx-initials" aria-hidden="true"><oj-bind-text value="[[ $application.functions.initials($current.data.name) ]]"></oj-bind-text></span>
-          <span class="mx-role-tab-text">
-            <span class="mx-cell-strong mx-block"><oj-bind-text value="[[ $current.data.role ]]"></oj-bind-text></span>
-            <span class="mx-muted mx-block"><oj-bind-text value="[[ $current.data.name ]]"></oj-bind-text></span>
-          </span>
-          <span :class="[[ 'mx-chip-count' + ($current.data.count > 0 ? ' is-warn' : '') ]]"><oj-bind-text value="[[ $current.data.count ]]"></oj-bind-text></span>
-        </button>
-      </template>
-    </oj-bind-for-each>
-  </section>
+  <div class="oj-sm-padding-4x">
+    <div class="mx-toolbar">
+      <span class="oj-typography-semi-bold" id="actingAsLabel">Acting as</span>
+      <oj-buttonset-one value="{{ $variables.role }}" chroming="outlined" aria-labelledby="actingAsLabel"
+        on-value-changed="[[$listeners.roleChanged]]">
+        <oj-bind-for-each data="[[ $variables.roleTabs ]]">
+          <template>
+            <oj-option value="[[ $current.data.id ]]">
+              <oj-bind-text value="[[ $current.data.role + ' (' + $current.data.count + ')' ]]"></oj-bind-text>
+            </oj-option>
+          </template>
+        </oj-bind-for-each>
+      </oj-buttonset-one>
+    </div>
 
-  <!-- ============ Empty state ============ -->
-  <oj-bind-if test="[[ $variables.items.length === 0 ]]">
-    <section class="mx-card mx-empty">
-      <svg viewBox="0 0 64 64" width="64" height="64" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-        <circle cx="32" cy="32" r="22"></circle><path d="M22 33l7 7 14-15"></path>
-      </svg>
-      <p class="mx-empty-title">You're all caught up</p>
-      <p class="mx-muted"><oj-bind-text value="[[ 'Nothing is waiting for the ' + $application.functions.roleText($variables.role) + '.' ]]"></oj-bind-text></p>
-      <div class="mx-empty-actions">
+    <!-- ============ Empty state ============ -->
+    <oj-bind-if test="[[ $variables.items.length === 0 ]]">
+      <div class="oj-panel mx-panel mx-empty">
+        <p class="oj-typography-subheading-xs">
+          <oj-bind-text value="[[ $variables.searchText ? 'Nothing matches your search' : 'You are all caught up' ]]"></oj-bind-text>
+        </p>
+        <p class="oj-text-color-secondary"><oj-bind-text value="[[ 'Nothing else is waiting for the ' + $application.functions.roleText($variables.role) + '.' ]]"></oj-bind-text></p>
         <oj-button chroming="outlined" on-oj-action="[[$listeners.viewRequests]]">View all requests</oj-button>
       </div>
-    </section>
-  </oj-bind-if>
+    </oj-bind-if>
 
-  <!-- ============ Waiting items ============ -->
-  <div class="mx-approval-list">
+    <!-- ============ Waiting items ============ -->
     <oj-bind-for-each data="[[ $variables.items ]]">
       <template>
-        <article :class="[[ 'mx-approval is-' + $application.functions.priorityTone($current.data.priority) ]]">
-          <header class="mx-approval-head">
-            <span class="mx-recent-id"><oj-bind-text value="[[ $current.data.id ]]"></oj-bind-text></span>
-            <span :class="[[ 'mx-pri is-' + $application.functions.priorityTone($current.data.priority) ]]"><oj-bind-text value="[[ $current.data.priority ]]"></oj-bind-text></span>
-            <span class="mx-tag"><oj-bind-text value="[[ $current.data.type ]]"></oj-bind-text></span>
+        <article class="oj-panel mx-panel mx-approval">
+          <div class="mx-badges">
+            <button type="button" class="mx-link oj-typography-semi-bold" on-click="[[$listeners.openRequest]]"><oj-bind-text value="[[ $current.data.id ]]"></oj-bind-text></button>
+            <span :class="[[ $application.functions.priorityBadgeClass($current.data.priority) ]]"><oj-bind-text value="[[ $current.data.priority ]]"></oj-bind-text></span>
+            <span class="oj-badge oj-badge-subtle"><oj-bind-text value="[[ $current.data.type ]]"></oj-bind-text></span>
             <oj-bind-if test="[[ $current.data.downtime ]]">
-              <span class="mx-status is-down">Equipment down</span>
+              <span class="oj-badge oj-badge-danger">Equipment down</span>
             </oj-bind-if>
-            <span class="mx-spacer"></span>
-            <span class="mx-muted"><oj-bind-text value="[[ $current.data.stepLabel + ' · raised ' + $application.functions.relDays($current.data.requestedOn) ]]"></oj-bind-text></span>
-          </header>
+            <span class="mx-toolbar-spacer"></span>
+            <span class="oj-text-color-secondary"><oj-bind-text value="[[ $current.data.stepLabel + ' · raised ' + $application.functions.relDays($current.data.requestedOn) ]]"></oj-bind-text></span>
+          </div>
 
-          <h2 class="mx-approval-title"><oj-bind-text value="[[ $current.data.title ]]"></oj-bind-text></h2>
-          <p class="mx-approval-desc"><oj-bind-text value="[[ $current.data.description ]]"></oj-bind-text></p>
+          <h2 class="oj-typography-subheading-sm mx-approval-title"><oj-bind-text value="[[ $current.data.title ]]"></oj-bind-text></h2>
+          <p><oj-bind-text value="[[ $current.data.description ]]"></oj-bind-text></p>
 
           <dl class="mx-facts mx-facts--4">
             <div><dt>Equipment</dt><dd><oj-bind-text value="[[ $current.data.equipmentName ]]"></oj-bind-text></dd></div>
@@ -64,46 +63,44 @@
             <div><dt>Estimated cost</dt><dd><oj-bind-text value="[[ $application.functions.fmtMoney($current.data.estCost) ]]"></oj-bind-text></dd></div>
           </dl>
 
-          <div class="mx-route-inline" aria-label="Approval route">
+          <div class="mx-badges" aria-label="Approval route">
             <oj-bind-for-each data="[[ $current.data.route ]]">
               <template>
-                <span :class="[[ 'mx-route-chip is-' + $application.functions.statusTone($current.data.status) ]]" :title="[[ $current.data.name + ' · ' + $current.data.status ]]">
-                  <span class="mx-route-chip-num"><oj-bind-text value="[[ $current.data.status === 'Approved' ? '✓' : $current.data.level ]]"></oj-bind-text></span>
-                  <oj-bind-text value="[[ $current.data.role ]]"></oj-bind-text>
+                <span :class="[[ $application.functions.badgeClass($current.data.status) ]]" :title="[[ $current.data.name + ' · ' + $current.data.status ]]">
+                  <oj-bind-text value="[[ $current.data.level + '. ' + $current.data.role + ' · ' + $current.data.status ]]"></oj-bind-text>
                 </span>
               </template>
             </oj-bind-for-each>
           </div>
 
-          <footer class="mx-approval-actions">
-            <span class="mx-muted"><oj-bind-text value="[[ $current.data.neededBy ? 'Needed by ' + $application.functions.fmtDate($current.data.neededBy) : '' ]]"></oj-bind-text></span>
-            <span class="mx-spacer"></span>
+          <div class="mx-actions">
+            <span class="oj-text-color-secondary"><oj-bind-text value="[[ $current.data.neededBy ? 'Needed by ' + $application.functions.fmtDate($current.data.neededBy) : '' ]]"></oj-bind-text></span>
+            <span class="mx-toolbar-spacer"></span>
             <oj-button chroming="outlined" on-oj-action="[[$listeners.reject]]">Reject</oj-button>
             <oj-button chroming="callToAction" on-oj-action="[[$listeners.approve]]">Approve</oj-button>
-          </footer>
+          </div>
         </article>
       </template>
     </oj-bind-for-each>
   </div>
+</oj-sp-smart-search-page>
 
-  <!-- ============ Reject dialog ============ -->
-  <oj-dialog id="rejectDialog" class="mx-dialog" dialog-title="Reject request" cancel-behavior="icon">
-    <div slot="body">
-      <p class="mx-cell-strong"><oj-bind-text value="[[ $variables.rejectId + ' · ' + $variables.rejectTitle ]]"></oj-bind-text></p>
-      <p class="mx-muted">The requester sees your reason on the request timeline.</p>
-      <oj-text-area id="rejectReason"
-        label-hint="Reason for rejecting"
-        rows="4"
-        length.max="300"
-        value="{{ $variables.rejectComment }}">
-      </oj-text-area>
-      <oj-bind-if test="[[ $variables.rejectError ]]">
-        <p class="mx-inline-error" role="alert"><oj-bind-text value="[[ $variables.rejectError ]]"></oj-bind-text></p>
-      </oj-bind-if>
-    </div>
-    <div slot="footer">
-      <oj-button chroming="borderless" on-oj-action="[[$listeners.cancelReject]]">Cancel</oj-button>
-      <oj-button chroming="callToAction" on-oj-action="[[$listeners.confirmReject]]">Reject request</oj-button>
-    </div>
-  </oj-dialog>
-</div>
+<!-- ============ Reject dialog ============ -->
+<oj-dialog id="rejectDialog" class="mx-dialog" dialog-title="Reject request" cancel-behavior="icon">
+  <div slot="body">
+    <p class="oj-typography-semi-bold"><oj-bind-text value="[[ $variables.rejectId + ' · ' + $variables.rejectTitle ]]"></oj-bind-text></p>
+    <p class="oj-text-color-secondary">The requester sees your reason on the request timeline.</p>
+    <oj-text-area id="rejectReason" class="oj-form-control-full-width"
+      label-hint="Reason for rejecting"
+      rows="4"
+      length.max="300"
+      value="{{ $variables.rejectComment }}"></oj-text-area>
+    <oj-bind-if test="[[ $variables.rejectError ]]">
+      <p class="oj-text-color-danger" role="alert"><oj-bind-text value="[[ $variables.rejectError ]]"></oj-bind-text></p>
+    </oj-bind-if>
+  </div>
+  <div slot="footer">
+    <oj-button chroming="borderless" on-oj-action="[[$listeners.cancelReject]]">Cancel</oj-button>
+    <oj-button chroming="callToAction" on-oj-action="[[$listeners.confirmReject]]">Reject request</oj-button>
+  </div>
+</oj-dialog>

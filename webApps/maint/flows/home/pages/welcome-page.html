@@ -1,0 +1,76 @@
+<!--
+  Home: Oracle's Redwood welcome page template (oj-sp-welcome-page).
+  The banner carries the two main actions; the cards below are oj-sp-object-card items in a card list.
+  A welcome page shows either a search field or actions, not both, so this one uses actions.
+-->
+<oj-sp-welcome-page
+  illustration-foreground="https://static.oracle.com/cdn/fnd/gallery/2207.2.0/images/illust-welcome-banner-fg-02.png"
+  illustration-background="https://static.oracle.com/cdn/fnd/gallery/2207.2.0/images/illust-welcome-banner-bg-01.png"
+  background-color="dark-teal"
+  display-options.mobile-image="off"
+  overline-text="[[ $variables.overline ]]"
+  page-title="[[ $variables.pageTitle ]]"
+  description-text="[[ $variables.summary ]]"
+  primary-action.label="Raise request"
+  secondary-action.label="Browse equipment"
+  on-sp-primary-action="[[$listeners.welcomePrimaryAction]]"
+  on-sp-secondary-action="[[$listeners.welcomeSecondaryAction]]">
+
+  <div class="mx-section">
+    <h2 class="oj-typography-heading-xs mx-section-title">
+      <oj-bind-text value="[[ 'Needs your attention (' + $variables.attentionCount + ')' ]]"></oj-bind-text>
+    </h2>
+    <oj-list-view class="mx-cards" display="card" aria-label="Needs your attention"
+      data="[[ $variables.attentionADP ]]" on-oj-item-action="[[$listeners.openCard]]">
+      <template slot="itemTemplate">
+        <li class="oj-sm-12 oj-md-6 oj-lg-4">
+          <oj-sp-object-card
+            primary-text="[[ $current.data.title ]]"
+            secondary-text="[[ $current.data.text ]]"
+            label="[[ $current.data.label ]]"
+            badge.text="[[ $current.data.badge ]]" badge.status="neutral" badge.style="strong"
+            display-options.horizontal-gauge="off" display-options.circular-gauge="off"
+            emphasized="true"></oj-sp-object-card>
+        </li>
+      </template>
+      <template slot="noData">
+        <p class="oj-text-color-secondary">Nothing needs your attention right now.</p>
+      </template>
+    </oj-list-view>
+  </div>
+
+  <div class="mx-section">
+    <h2 class="oj-typography-heading-xs mx-section-title">Shortcuts</h2>
+    <oj-list-view class="mx-cards" display="card" aria-label="Shortcuts"
+      data="[[ $variables.shortcutsADP ]]" on-oj-item-action="[[$listeners.openCard]]">
+      <template slot="itemTemplate">
+        <li class="oj-sm-12 oj-md-6 oj-lg-4">
+          <oj-sp-object-card
+            primary-text="[[ $current.data.title ]]"
+            secondary-text="[[ $current.data.text ]]"
+            label="[[ $current.data.label ]]"
+            badge.text="[[ $current.data.badge ]]" badge.status="neutral" badge.style="strong"
+            display-options.horizontal-gauge="off" display-options.circular-gauge="off"></oj-sp-object-card>
+        </li>
+      </template>
+    </oj-list-view>
+  </div>
+
+  <div class="mx-section">
+    <h2 class="oj-typography-heading-xs mx-section-title">Latest requests</h2>
+    <oj-list-view class="mx-cards" display="card" aria-label="Latest requests"
+      data="[[ $variables.recentADP ]]" on-oj-item-action="[[$listeners.openCard]]">
+      <template slot="itemTemplate">
+        <li class="oj-sm-12 oj-md-6 oj-lg-4">
+          <oj-sp-object-card
+            primary-text="[[ $current.data.title ]]"
+            secondary-text="[[ $current.data.text ]]"
+            label="[[ $current.data.label ]]"
+            badge.text="[[ $current.data.badge ]]" badge.status="neutral" badge.style="strong"
+            display-options.horizontal-gauge="off" display-options.circular-gauge="off"></oj-sp-object-card>
+        </li>
+      </template>
+    </oj-list-view>
+  </div>
+
+</oj-sp-welcome-page>

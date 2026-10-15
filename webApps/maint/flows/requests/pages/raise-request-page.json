@@ -1,6 +1,6 @@
 {
   "title": "Raise request",
-  "description": "Maintenance request form with validation, a live equipment preview and the approval route the request will follow",
+  "description": "Redwood simple create and edit page: request form with validation, the selected equipment and the approval route the request will follow",
   "variables": {
     "form": {
       "type": "object",
@@ -12,7 +12,8 @@
         "priority": "Medium",
         "neededBy": null,
         "estCost": 0,
-        "downtime": false
+        "downtime": false,
+        "sendNow": true
       }
     },
     "equipmentADP": {
@@ -109,36 +110,6 @@
         }
       ]
     },
-    "saveDraft": {
-      "chains": [
-        {
-          "chain": "saveRequestChain",
-          "parameters": {
-            "submit": false
-          }
-        }
-      ]
-    },
-    "submitRequest": {
-      "chains": [
-        {
-          "chain": "saveRequestChain",
-          "parameters": {
-            "submit": true
-          }
-        }
-      ]
-    },
-    "cancel": {
-      "chains": [
-        {
-          "chain": "goToChain",
-          "parameters": {
-            "flow": "dashboard"
-          }
-        }
-      ]
-    },
     "viewEquipment": {
       "chains": [
         {
@@ -148,14 +119,31 @@
           }
         }
       ]
+    },
+    "savePrimaryAction": {
+      "chains": [
+        {
+          "chain": "saveRequestChain"
+        }
+      ]
+    },
+    "cancelPage": {
+      "chains": [
+        {
+          "chain": "openPageChain",
+          "parameters": {
+            "page": "my-requests"
+          }
+        }
+      ]
     }
   },
   "imports": {
     "components": {
-      "oj-button": {
-        "path": "ojs/ojbutton"
+      "oj-sp-simple-create-edit": {
+        "path": "oj-sp/simple-create-edit/loader"
       },
-      "oj-buttonset-one": {
+      "oj-button": {
         "path": "ojs/ojbutton"
       },
       "oj-option": {
@@ -184,6 +172,9 @@
       },
       "oj-validation-group": {
         "path": "ojs/ojvalidationgroup"
+      },
+      "oj-radioset": {
+        "path": "ojs/ojradioset"
       }
     }
   }

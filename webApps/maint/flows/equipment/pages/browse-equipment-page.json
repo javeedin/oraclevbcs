@@ -1,14 +1,17 @@
 {
-  "title": "Browse equipment",
-  "description": "Equipment catalogue: search, category and status filters, card or table view, and a detail drawer with history",
+  "title": "Equipment",
+  "description": "Redwood smart search page: search, category and status filters, object cards or a table, and a general drawer with specs and history",
   "variables": {
     "all": {
       "type": "object[]",
       "defaultValue": []
     },
-    "shown": {
-      "type": "object[]",
-      "defaultValue": []
+    "cardsADP": {
+      "type": "vb/ArrayDataProvider2",
+      "defaultValue": {
+        "keyAttributes": "id",
+        "itemType": "EquipmentRowType"
+      }
     },
     "tableADP": {
       "type": "vb/ArrayDataProvider2",
@@ -38,9 +41,12 @@
       "defaultValue": "cards",
       "persisted": "history"
     },
-    "categoryChips": {
-      "type": "object[]",
-      "defaultValue": []
+    "categoryOptionsADP": {
+      "type": "vb/ArrayDataProvider2",
+      "defaultValue": {
+        "keyAttributes": "value",
+        "itemType": "OptionType"
+      }
     },
     "stats": {
       "type": "object",
@@ -50,6 +56,10 @@
         "maintenance": 0,
         "down": 0
       }
+    },
+    "subtitle": {
+      "type": "string",
+      "defaultValue": ""
     },
     "selected": {
       "type": "object",
@@ -108,6 +118,10 @@
           "className": "oj-helper-text-align-end"
         }
       ]
+    },
+    "shownCount": {
+      "type": "number",
+      "defaultValue": 0
     }
   },
   "metadata": {},
@@ -122,7 +136,14 @@
       "nextPm": "string",
       "pmState": "string",
       "criticality": "string",
-      "openRequests": "number"
+      "openRequests": "number",
+      "manufacturer": "string",
+      "model": "string",
+      "pmDays": "number"
+    },
+    "OptionType": {
+      "value": "string",
+      "label": "string"
     }
   },
   "eventListeners": {
@@ -143,12 +164,12 @@
         }
       ]
     },
-    "categoryClick": {
+    "categoryChanged": {
       "chains": [
         {
           "chain": "filterEquipmentChain",
           "parameters": {
-            "category": "{{ $current.data.key }}"
+            "category": "{{ $event.detail.value }}"
           }
         }
       ]
@@ -173,32 +194,12 @@
         }
       ]
     },
-    "openCard": {
-      "chains": [
-        {
-          "chain": "openEquipmentChain",
-          "parameters": {
-            "id": "{{ $current.data.id }}"
-          }
-        }
-      ]
-    },
     "openRow": {
       "chains": [
         {
           "chain": "openEquipmentChain",
           "parameters": {
             "id": "{{ $current.row.id }}"
-          }
-        }
-      ]
-    },
-    "raiseFromCard": {
-      "chains": [
-        {
-          "chain": "raiseForEquipmentChain",
-          "parameters": {
-            "id": "{{ $current.data.id }}"
           }
         }
       ]
@@ -219,10 +220,55 @@
           "chain": "closeDetailChain"
         }
       ]
+    },
+    "openCard": {
+      "chains": [
+        {
+          "chain": "openEquipmentChain",
+          "parameters": {
+            "id": "{{ $event.detail.context.key }}"
+          }
+        }
+      ]
+    },
+    "raiseFromRow": {
+      "chains": [
+        {
+          "chain": "raiseForEquipmentChain",
+          "parameters": {
+            "id": "{{ $current.row.id }}"
+          }
+        }
+      ]
+    },
+    "raiseRequest": {
+      "chains": [
+        {
+          "chain": "raiseForEquipmentChain"
+        }
+      ]
     }
   },
   "imports": {
     "components": {
+      "oj-sp-smart-search-page": {
+        "path": "oj-sp/smart-search-page/loader"
+      },
+      "oj-sp-object-card": {
+        "path": "oj-sp/object-card/loader"
+      },
+      "oj-sp-general-drawer-template": {
+        "path": "oj-sp/general-drawer-template/loader"
+      },
+      "oj-input-search": {
+        "path": "ojs/ojinputsearch"
+      },
+      "oj-select-single": {
+        "path": "ojs/ojselectsingle"
+      },
+      "oj-list-view": {
+        "path": "ojs/ojlistview"
+      },
       "oj-button": {
         "path": "ojs/ojbutton"
       },
@@ -232,14 +278,14 @@
       "oj-option": {
         "path": "ojs/ojoption"
       },
-      "oj-input-text": {
-        "path": "ojs/ojinputtext"
-      },
       "oj-table": {
         "path": "ojs/ojtable"
       },
       "oj-drawer-popup": {
         "path": "ojs/ojdrawerpopup"
+      },
+      "oj-progress-bar": {
+        "path": "ojs/ojprogress-bar"
       }
     }
   }

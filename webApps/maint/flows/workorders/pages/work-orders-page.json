@@ -1,6 +1,6 @@
 {
   "title": "Work orders",
-  "description": "Board of work orders created from approved requests: Scheduled, In progress and Completed",
+  "description": "Redwood smart search page with a board of work orders created from approved requests: Scheduled, In progress and Completed",
   "variables": {
     "board": {
       "type": "object[]",
@@ -14,6 +14,22 @@
         "completed": 0,
         "completedThisWeek": 0
       }
+    },
+    "all": {
+      "type": "object[]",
+      "defaultValue": []
+    },
+    "search": {
+      "type": "string",
+      "defaultValue": ""
+    },
+    "searchText": {
+      "type": "string",
+      "defaultValue": ""
+    },
+    "subtitle": {
+      "type": "string",
+      "defaultValue": ""
     }
   },
   "metadata": {},
@@ -45,12 +61,42 @@
           }
         }
       ]
+    },
+    "searchChanged": {
+      "chains": [
+        {
+          "chain": "searchWorkOrdersChain",
+          "parameters": {
+            "text": "{{ $event.detail.value }}"
+          }
+        }
+      ]
+    },
+    "openRequest": {
+      "chains": [
+        {
+          "chain": "goToChain",
+          "parameters": {
+            "flow": "requests",
+            "requestId": "{{ $current.data.requestId }}"
+          }
+        }
+      ]
     }
   },
   "imports": {
     "components": {
+      "oj-sp-smart-search-page": {
+        "path": "oj-sp/smart-search-page/loader"
+      },
+      "oj-input-search": {
+        "path": "ojs/ojinputsearch"
+      },
       "oj-button": {
         "path": "ojs/ojbutton"
+      },
+      "oj-progress-bar": {
+        "path": "ojs/ojprogress-bar"
       }
     }
   }

@@ -1,0 +1,106 @@
+<!--
+  Send for approval: Oracle's Redwood simple create and edit page template.
+  The template's primary action ("Send") sends the ticked drafts; Cancel goes back to Requests.
+-->
+<oj-sp-simple-create-edit display-mode="mixed"
+  page-title="Send for approval"
+  page-subtitle="Tick the drafts to send. Each one goes to its own approvers, worked out from its priority, type and cost."
+  primary-action.label="Send"
+  display-options.go-to-parent="true"
+  on-sp-primary-action="[[$listeners.send]]"
+  on-sp-cancel="[[$listeners.cancelPage]]"
+  on-sp-go-to-parent="[[$listeners.cancelPage]]">
+
+  <div slot="main">
+
+    <!-- ============ Empty state ============ -->
+    <oj-bind-if test="[[ $variables.drafts.length === 0 ]]">
+      <div class="oj-panel mx-panel mx-empty">
+        <p class="oj-typography-subheading-xs">No drafts waiting to be sent</p>
+        <p class="oj-text-color-secondary">Requests you save as drafts show up here.</p>
+        <div class="mx-actions">
+          <oj-button chroming="callToAction" on-oj-action="[[$listeners.newRequest]]">Raise request</oj-button>
+          <oj-button chroming="outlined" on-oj-action="[[$listeners.cancelPage]]">Back to requests</oj-button>
+        </div>
+      </div>
+    </oj-bind-if>
+
+    <oj-bind-if test="[[ $variables.drafts.length > 0 ]]">
+      <div class="oj-flex oj-sm-flex-wrap mx-create">
+
+        <!-- ============ Draft list ============ -->
+        <div class="oj-flex-item oj-sm-12 oj-lg-8 mx-create-form">
+          <div class="mx-toolbar">
+            <span class="oj-typography-semi-bold">
+              <oj-bind-text value="[[ $variables.selectedIds.length + ' of ' + $variables.drafts.length + ' selected' ]]"></oj-bind-text>
+            </span>
+            <span class="mx-toolbar-spacer"></span>
+            <oj-button chroming="borderless" on-oj-action="[[$listeners.toggleAll]]">
+              <oj-bind-text value="[[ $variables.selectedIds.length === $variables.drafts.length ? 'Clear selection' : 'Select all' ]]"></oj-bind-text>
+            </oj-button>
+          </div>
+
+          <oj-bind-for-each data="[[ $variables.drafts ]]">
+            <template>
+              <label :class="[[ 'oj-panel mx-panel mx-draft' + ($current.data.selected ? ' is-selected' : '') ]]">
+                <input type="checkbox" class="mx-draft-check" :checked="[[ $current.data.selected ]]"
+                  :aria-label="[[ 'Select ' + $current.data.id ]]" on-click="[[$listeners.toggleDraft]]">
+                <span class="mx-draft-body">
+                  <span class="mx-badges">
+                    <span class="oj-typography-semi-bold"><oj-bind-text value="[[ $current.data.id ]]"></oj-bind-text></span>
+                    <span :class="[[ $application.functions.priorityBadgeClass($current.data.priority) ]]"><oj-bind-text value="[[ $current.data.priority ]]"></oj-bind-text></span>
+                    <span class="oj-text-color-secondary"><oj-bind-text value="[[ $current.data.type + ' · saved ' + $application.functions.relDays($current.data.requestedOn) ]]"></oj-bind-text></span>
+                  </span>
+                  <span class="mx-block oj-typography-subheading-xs"><oj-bind-text value="[[ $current.data.title ]]"></oj-bind-text></span>
+                  <span class="mx-block oj-text-color-secondary"><oj-bind-text value="[[ $current.data.equipmentName + ' · ' + $current.data.location ]]"></oj-bind-text></span>
+                  <span class="mx-block oj-text-color-secondary"><oj-bind-text value="[[ 'Estimated ' + $application.functions.fmtMoney($current.data.estCost) + ' · needed by ' + ($current.data.neededBy ? $application.functions.fmtDate($current.data.neededBy) : '—') ]]"></oj-bind-text></span>
+                  <span class="mx-badges" aria-label="Approval route">
+                    <oj-bind-for-each data="[[ $current.data.routePreview ]]">
+                      <template>
+                        <span class="oj-badge oj-badge-subtle" :title="[[ $current.data.name + ' · ' + $current.data.reason ]]">
+                          <oj-bind-text value="[[ $current.data.level + '. ' + $current.data.role ]]"></oj-bind-text>
+                        </span>
+                      </template>
+                    </oj-bind-for-each>
+                  </span>
+                </span>
+              </label>
+            </template>
+          </oj-bind-for-each>
+        </div>
+
+        <!-- ============ Summary ============ -->
+        <div class="oj-flex-item oj-sm-12 oj-lg-4 mx-create-side">
+          <section class="oj-panel mx-panel">
+            <h2 class="oj-typography-subheading-xs">Who will approve</h2>
+            <oj-bind-if test="[[ $variables.approvers.length === 0 ]]">
+              <p class="oj-text-color-secondary">Select at least one draft.</p>
+            </oj-bind-if>
+            <ul class="mx-list">
+              <oj-bind-for-each data="[[ $variables.approvers ]]">
+                <template>
+                  <li class="mx-list-row">
+                    <span class="mx-list-main">
+                      <span class="mx-block oj-typography-semi-bold"><oj-bind-text value="[[ $current.data.name ]]"></oj-bind-text></span>
+                      <span class="mx-block oj-text-color-secondary"><oj-bind-text value="[[ $current.data.role ]]"></oj-bind-text></span>
+                    </span>
+                    <span class="oj-badge oj-badge-subtle"><oj-bind-text value="[[ $current.data.count + ' ' + $application.functions.plural($current.data.count, 'request', 'requests') ]]"></oj-bind-text></span>
+                  </li>
+                </template>
+              </oj-bind-for-each>
+            </ul>
+
+            <oj-text-area class="oj-form-control-full-width"
+              label-hint="Note for the approvers (optional)"
+              rows="3"
+              length.max="300"
+              value="{{ $variables.note }}"></oj-text-area>
+            <p class="oj-text-color-secondary oj-typography-body-sm">
+              <oj-bind-text value="[[ 'Send sends the ' + $variables.selectedIds.length + ' selected ' + $application.functions.plural($variables.selectedIds.length, 'request', 'requests') + '. Each approver is notified and the request moves to Pending approval.' ]]"></oj-bind-text>
+            </p>
+          </section>
+        </div>
+      </div>
+    </oj-bind-if>
+  </div>
+</oj-sp-simple-create-edit>

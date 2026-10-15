@@ -1,6 +1,6 @@
 {
   "title": "Approval inbox",
-  "description": "Requests waiting for a decision, per approver role. Approve moves a request to its next step or creates the work order; reject needs a reason.",
+  "description": "Redwood smart search page: act as an approver role, search what waits for it, approve or reject with a reason",
   "variables": {
     "role": {
       "type": "string",
@@ -30,6 +30,18 @@
     "rejectError": {
       "type": "string",
       "defaultValue": ""
+    },
+    "search": {
+      "type": "string",
+      "defaultValue": ""
+    },
+    "searchText": {
+      "type": "string",
+      "defaultValue": ""
+    },
+    "allItems": {
+      "type": "object[]",
+      "defaultValue": []
     }
   },
   "metadata": {},
@@ -39,16 +51,6 @@
       "chains": [
         {
           "chain": "loadInboxChain"
-        }
-      ]
-    },
-    "roleClick": {
-      "chains": [
-        {
-          "chain": "loadInboxChain",
-          "parameters": {
-            "roleId": "{{ $current.data.id }}"
-          }
         }
       ]
     },
@@ -102,10 +104,53 @@
           }
         }
       ]
+    },
+    "roleChanged": {
+      "chains": [
+        {
+          "chain": "loadInboxChain",
+          "parameters": {
+            "roleId": "{{ $event.detail.value }}"
+          }
+        }
+      ]
+    },
+    "searchChanged": {
+      "chains": [
+        {
+          "chain": "searchInboxChain",
+          "parameters": {
+            "text": "{{ $event.detail.value }}"
+          }
+        }
+      ]
+    },
+    "openRequest": {
+      "chains": [
+        {
+          "chain": "goToChain",
+          "parameters": {
+            "flow": "requests",
+            "requestId": "{{ $current.data.id }}"
+          }
+        }
+      ]
     }
   },
   "imports": {
     "components": {
+      "oj-sp-smart-search-page": {
+        "path": "oj-sp/smart-search-page/loader"
+      },
+      "oj-input-search": {
+        "path": "ojs/ojinputsearch"
+      },
+      "oj-buttonset-one": {
+        "path": "ojs/ojbutton"
+      },
+      "oj-option": {
+        "path": "ojs/ojoption"
+      },
       "oj-button": {
         "path": "ojs/ojbutton"
       },

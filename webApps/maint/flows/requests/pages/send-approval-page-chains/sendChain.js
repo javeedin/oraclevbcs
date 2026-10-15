@@ -9,7 +9,7 @@ define([
 ) => {
   'use strict';
 
-  /** Sends the selected drafts for approval, then refreshes the list. */
+  /** The template's primary action (spPrimaryAction): sends the ticked drafts, then opens Requests. */
   class sendChain extends ActionChain {
 
     /**
@@ -18,8 +18,16 @@ define([
     async run(context) {
       const { $page, $application } = context;
 
+      if ($page.variables.isSending) {
+        return;
+      }
       const ids = Array.from($page.variables.selectedIds || []);
       if (ids.length === 0) {
+        $application.variables.messages = $application.functions.message(
+          'warning',
+          'Nothing selected',
+          'Tick at least one draft to send it for approval.',
+        );
         return;
       }
 
@@ -27,7 +35,6 @@ define([
 
       // Sample data. Live version: POST /requests/submit with { ids, note } to ORDS.
       const sent = $application.functions.sendForApproval(ids, $page.variables.note);
-
       const first = sent[0];
       $application.variables.messages = $application.functions.message(
         'confirmation',
@@ -35,15 +42,15 @@ define([
         sent.length === 1 ? `Waiting for ${first.waitingFor}.` : 'Each one is waiting for its first approver.',
       );
       $application.variables.counts = $application.functions.counts();
-
-      // What is left to send.
-      const drafts = $application.functions.drafts();
-      const remaining = drafts.map((d) => d.id);
-      $page.variables.selectedIds = remaining;
-      $page.variables.drafts = $page.functions.decorate(drafts, remaining);
-      $page.variables.approvers = $page.functions.approvers(drafts, remaining);
-      $page.variables.note = '';
       $page.variables.isSending = false;
+
+      // Show the result on the Requests page (with the request open when only one was sent).
+      if (sent.length === 1) {
+        $application.variables.openRequestId = first.id;
+      }
+      await Actions.navigateToPage(context, {
+        page: 'my-requests',
+      });
     }
   }
 

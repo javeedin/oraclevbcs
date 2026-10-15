@@ -15,6 +15,20 @@ define([], () => {
       }));
     }
 
+    /** Keeps the waiting requests that match the search text. */
+    filterItems(items, text) {
+      const q = String(text || '').trim().toLowerCase();
+      if (!q) {
+        return items || [];
+      }
+      return (items || []).filter((r) =>
+        [r.id, r.title, r.description, r.equipmentName, r.location, r.requestedBy, r.type, r.priority]
+          .join(' ')
+          .toLowerCase()
+          .includes(q),
+      );
+    }
+
     openDialog(id) {
       const dialog = document.getElementById(id);
       if (dialog) {

@@ -9,7 +9,7 @@ define([
 ) => {
   'use strict';
 
-  /** "Reset sample data": reseeds the store and reloads the app on the dashboard. */
+  /** "Reset sample data": reseeds the store and reloads the app. */
   class resetDemoChain extends ActionChain {
 
     /**
@@ -20,7 +20,6 @@ define([
 
       $application.functions.resetDemo();
       $application.variables.counts = $application.functions.counts();
-      $application.variables.activeNav = 'dashboard';
 
       // A full reload is the simplest way to make every page re-read the store.
       window.location.reload();

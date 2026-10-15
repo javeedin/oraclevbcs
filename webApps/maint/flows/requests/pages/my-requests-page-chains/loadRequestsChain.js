@@ -9,7 +9,10 @@ define([
 ) => {
   'use strict';
 
-  /** Loads all requests when the page opens and applies the current filters. */
+  /**
+   * Loads all requests when the page opens and applies the current filters.
+   * If another page asked to open one request ($application.variables.openRequestId), opens its drawer.
+   */
   class loadRequestsChain extends ActionChain {
 
     /**
@@ -18,17 +21,30 @@ define([
     async run(context) {
       const { $page, $application } = context;
 
-      $application.variables.activeNav = 'requests';
-
       // Sample data. Live version: GET /requests from ORDS.
       const all = $application.functions.requestList();
       $page.variables.all = all;
 
-      const shown = $page.functions.filterRequests(all, $page.variables.statusFilter, $page.variables.scope);
+      const v = $page.variables;
+      const shown = $page.functions.filterRequests(all, v.statusFilter, v.scope, v.searchText);
       $page.variables.requestsADP.data = shown;
       $page.variables.shownCount = shown.length;
-      $page.variables.statusChips = $page.functions.statusChips(all, $page.variables.statusFilter, $page.variables.scope);
-      $application.variables.counts = $application.functions.counts();
+      $page.variables.statusOptionsADP.data = $page.functions.statusOptions(all, v.scope, v.searchText);
+
+      const counts = $application.functions.counts();
+      $application.variables.counts = counts;
+      $page.variables.draftCount = counts.drafts;
+
+      const openId = $application.variables.openRequestId;
+      if (openId) {
+        $application.variables.openRequestId = '';
+        // Sample data. Live version: GET /requests/{id} from ORDS.
+        const request = $application.functions.requestById(openId);
+        if (request) {
+          $page.variables.selected = request;
+          $page.variables.detailOpen = true;
+        }
+      }
     }
   }
 

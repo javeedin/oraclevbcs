@@ -1,6 +1,6 @@
 {
   "title": "Send for approval",
-  "description": "Pick draft requests, preview who will approve each one, add a note and send them",
+  "description": "Redwood simple create and edit page: pick drafts, see who approves each one, add a note and send",
   "variables": {
     "drafts": {
       "type": "object[]",
@@ -60,19 +60,19 @@
     "newRequest": {
       "chains": [
         {
-          "chain": "goToChain",
+          "chain": "openPageChain",
           "parameters": {
-            "flow": "request"
+            "page": "raise-request"
           }
         }
       ]
     },
-    "viewRequests": {
+    "cancelPage": {
       "chains": [
         {
-          "chain": "goToChain",
+          "chain": "openPageChain",
           "parameters": {
-            "flow": "requests"
+            "page": "my-requests"
           }
         }
       ]
@@ -80,6 +80,9 @@
   },
   "imports": {
     "components": {
+      "oj-sp-simple-create-edit": {
+        "path": "oj-sp/simple-create-edit/loader"
+      },
       "oj-button": {
         "path": "ojs/ojbutton"
       },

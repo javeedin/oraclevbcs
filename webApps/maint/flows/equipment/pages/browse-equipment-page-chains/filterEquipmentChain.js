@@ -10,16 +10,16 @@ define([
   'use strict';
 
   /**
-   * Applies one filter change (search text as you type, a category chip,
-   * the status buttons) or clears them all, then refreshes cards and table.
+   * Applies one filter change (search text as you type, the category select,
+   * the status buttons) or clears them all, then refreshes the cards and the table.
    */
   class filterEquipmentChain extends ActionChain {
 
     /**
      * @param {Object} context
      * @param {Object} params
-     * @param {string} [params.text]      raw text from the search box
-     * @param {string} [params.category]  category chip key, 'All' for everything
+     * @param {string} [params.text]      raw text from the search field
+     * @param {string} [params.category]  category, 'All' for everything
      * @param {string} [params.status]    'all' | Running | Maintenance | Down
      * @param {boolean} [params.reset]    clear every filter
      */
@@ -44,15 +44,11 @@ define([
         $page.variables.status = status;
       }
 
-      const shown = $page.functions.filterList(
-        $page.variables.all,
-        $page.variables.searchText,
-        $page.variables.category,
-        $page.variables.status,
-      );
-      $page.variables.shown = shown;
+      const v = $page.variables;
+      const shown = $page.functions.filterList(v.all, v.searchText, v.category, v.status);
+      $page.variables.cardsADP.data = shown;
       $page.variables.tableADP.data = shown;
-      $page.variables.categoryChips = $page.functions.categoryChips($page.variables.all, $page.variables.category);
+      $page.variables.shownCount = shown.length;
     }
   }
 

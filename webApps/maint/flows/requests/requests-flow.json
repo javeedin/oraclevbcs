@@ -1,6 +1,6 @@
 {
   "id": "requests",
-  "description": "Requests list with detail drawer",
+  "description": "Requests: the smart search list with a detail drawer, the Raise request page and the Send for approval page",
   "defaultPage": "my-requests",
   "services": {},
   "types": {},

@@ -1,3 +1,20 @@
 {
-  "component-dependencies": {}
+  "component-dependencies": {
+    "oj-sp": {
+      "version": "2601.0.3",
+      "components": {
+        "in-app-navigation": "2601.0.3",
+        "pillar-theme": "2601.0.3",
+        "welcome-page": "2601.0.3",
+        "object-card": "2601.0.3",
+        "dashboard-landing-page": "2601.0.3",
+        "scoreboard": "2601.0.3",
+        "dashboard-grid": "2601.0.3",
+        "dashboard-panel": "2601.0.3",
+        "smart-search-page": "2601.0.3",
+        "simple-create-edit": "2601.0.3",
+        "general-drawer-template": "2601.0.3"
+      }
+    }
+  }
 }

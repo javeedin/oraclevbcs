@@ -32,16 +32,19 @@ define([
         `${request.id} sent for approval`,
         `Waiting for ${request.waitingFor}.`,
       );
-      $application.variables.counts = $application.functions.counts();
+      const counts = $application.functions.counts();
+      $application.variables.counts = counts;
+      $page.variables.draftCount = counts.drafts;
 
       // Refresh the drawer and the list.
       $page.variables.selected = $application.functions.requestById(id);
       const all = $application.functions.requestList();
       $page.variables.all = all;
-      const shown = $page.functions.filterRequests(all, $page.variables.statusFilter, $page.variables.scope);
+      const v = $page.variables;
+      const shown = $page.functions.filterRequests(all, v.statusFilter, v.scope, v.searchText);
       $page.variables.requestsADP.data = shown;
       $page.variables.shownCount = shown.length;
-      $page.variables.statusChips = $page.functions.statusChips(all, $page.variables.statusFilter, $page.variables.scope);
+      $page.variables.statusOptionsADP.data = $page.functions.statusOptions(all, v.scope, v.searchText);
     }
   }
 

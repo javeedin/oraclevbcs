@@ -73,7 +73,9 @@ define([
 
       const counts = $application.functions.counts();
       $application.variables.counts = counts;
-      $page.variables.items = $application.functions.inbox($page.variables.role);
+      const all = $application.functions.inbox($page.variables.role);
+      $page.variables.allItems = all;
+      $page.variables.items = $page.functions.filterItems(all, $page.variables.searchText);
       $page.variables.roleTabs = $page.functions.roleTabs($application.functions.roles(), counts, $page.variables.role);
     }
   }

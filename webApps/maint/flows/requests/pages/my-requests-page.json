@@ -1,6 +1,6 @@
 {
-  "title": "My requests",
-  "description": "Maintenance requests with status chips, a table and a detail drawer showing the approval route and timeline",
+  "title": "Requests",
+  "description": "Redwood smart search page: search, status and scope filters, the requests table and a general drawer with the approval route and timeline",
   "variables": {
     "all": {
       "type": "object[]",
@@ -13,6 +13,14 @@
         "itemType": "RequestRowType"
       }
     },
+    "search": {
+      "type": "string",
+      "defaultValue": ""
+    },
+    "searchText": {
+      "type": "string",
+      "defaultValue": ""
+    },
     "statusFilter": {
       "type": "string",
       "defaultValue": "All"
@@ -21,11 +29,18 @@
       "type": "string",
       "defaultValue": "all"
     },
-    "statusChips": {
-      "type": "object[]",
-      "defaultValue": []
+    "statusOptionsADP": {
+      "type": "vb/ArrayDataProvider2",
+      "defaultValue": {
+        "keyAttributes": "value",
+        "itemType": "OptionType"
+      }
     },
     "shownCount": {
+      "type": "number",
+      "defaultValue": 0
+    },
+    "draftCount": {
       "type": "number",
       "defaultValue": 0
     },
@@ -102,6 +117,10 @@
       "neededBy": "string",
       "waitingFor": "string",
       "workOrderId": "string"
+    },
+    "OptionType": {
+      "value": "string",
+      "label": "string"
     }
   },
   "eventListeners": {
@@ -112,12 +131,42 @@
         }
       ]
     },
-    "statusClick": {
+    "createRequest": {
+      "chains": [
+        {
+          "chain": "openPageChain",
+          "parameters": {
+            "page": "raise-request"
+          }
+        }
+      ]
+    },
+    "sendForApproval": {
+      "chains": [
+        {
+          "chain": "openPageChain",
+          "parameters": {
+            "page": "send-approval"
+          }
+        }
+      ]
+    },
+    "searchChanged": {
       "chains": [
         {
           "chain": "filterRequestsChain",
           "parameters": {
-            "status": "{{ $current.data.key }}"
+            "text": "{{ $event.detail.value }}"
+          }
+        }
+      ]
+    },
+    "statusChanged": {
+      "chains": [
+        {
+          "chain": "filterRequestsChain",
+          "parameters": {
+            "status": "{{ $event.detail.value }}"
           }
         }
       ]
@@ -159,16 +208,6 @@
         }
       ]
     },
-    "newRequest": {
-      "chains": [
-        {
-          "chain": "goToChain",
-          "parameters": {
-            "flow": "request"
-          }
-        }
-      ]
-    },
     "openWorkOrders": {
       "chains": [
         {
@@ -182,14 +221,26 @@
   },
   "imports": {
     "components": {
-      "oj-button": {
-        "path": "ojs/ojbutton"
+      "oj-sp-smart-search-page": {
+        "path": "oj-sp/smart-search-page/loader"
+      },
+      "oj-sp-general-drawer-template": {
+        "path": "oj-sp/general-drawer-template/loader"
+      },
+      "oj-input-search": {
+        "path": "ojs/ojinputsearch"
+      },
+      "oj-select-single": {
+        "path": "ojs/ojselectsingle"
       },
       "oj-buttonset-one": {
         "path": "ojs/ojbutton"
       },
       "oj-option": {
         "path": "ojs/ojoption"
+      },
+      "oj-button": {
+        "path": "ojs/ojbutton"
       },
       "oj-table": {
         "path": "ojs/ojtable"

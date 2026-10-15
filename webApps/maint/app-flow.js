@@ -1,4 +1,6 @@
-define([], () => {
+// 'oj-sp/spectra-shell/config/config' sets up Oracle's Redwood page templates (the oj-sp pack),
+// exactly as in Visual Builder's Redwood starter application.
+define(['oj-sp/spectra-shell/config/config'], () => {
   'use strict';
 
   /* ======================================================================
@@ -10,7 +12,7 @@ define([], () => {
    * It contains a small in-browser "database" of sample data (equipment,
    * maintenance requests, approval routes and work orders). Changes are saved
    * to localStorage, so a request you raise survives a page reload while you
-   * test locally. "Reset sample data" in the menu starts again.
+   * test locally. "Reset sample data" in the header starts again.
    *
    * Going live: each action chain calls one of the store methods below
    * (equipmentList, createRequest, decide, ...). Replace those calls with
@@ -770,7 +772,7 @@ define([], () => {
           tone: pmOverdue ? 'warn' : 'ok',
           flow: 'equipment',
         },
-      ];
+      ].map((k) => Object.assign(k, { title: k.label, metric: k.value, meta: k.sub })); // title/metric/meta: oj-sp-scoreboard
 
       const statusPoints = STATUSES.map((st) => ({
         id: st,
@@ -823,9 +825,13 @@ define([], () => {
           attention.push({
             id: `a-${r.id}`,
             tone: 'danger',
-            title: `${r.id} · ${r.title}`,
-            text: `Critical · waiting for ${step ? roleText(step.role) : 'approval'}`,
+            badge: 'Critical',
+            label: r.id,
+            title: r.title,
+            text: `Waiting for the ${step ? roleText(step.role) : 'approver'}`,
             flow: 'inbox',
+            page: '',
+            requestId: '',
           });
         });
       down.forEach((e) => {
@@ -833,9 +839,13 @@ define([], () => {
         attention.push({
           id: `d-${e.id}`,
           tone: 'danger',
+          badge: 'Down',
+          label: e.id,
           title: `${e.name} is down`,
           text: req ? `${req.id} is ${req.status.toLowerCase()}` : 'No request raised yet',
-          flow: 'equipment',
+          flow: req ? 'requests' : 'equipment',
+          page: '',
+          requestId: req ? req.id : '',
         });
       });
       eqs
@@ -844,9 +854,13 @@ define([], () => {
           attention.push({
             id: `p-${e.id}`,
             tone: 'warn',
-            title: `PM overdue: ${e.name}`,
-            text: `was due ${-e.pmDays} ${e.pmDays === -1 ? 'day' : 'days'} ago`,
+            badge: 'PM overdue',
+            label: e.id,
+            title: e.name,
+            text: `Preventive maintenance was due ${-e.pmDays} ${e.pmDays === -1 ? 'day' : 'days'} ago`,
             flow: 'equipment',
+            page: '',
+            requestId: '',
           });
         });
       const draftCount = reqs.filter((r) => r.status === 'Draft').length;
@@ -854,9 +868,13 @@ define([], () => {
         attention.push({
           id: 'drafts',
           tone: 'info',
+          badge: 'Drafts',
+          label: 'Your requests',
           title: `${draftCount} draft ${draftCount === 1 ? 'request' : 'requests'} not sent`,
           text: 'Send them for approval',
-          flow: 'approval',
+          flow: 'requests',
+          page: 'send-approval',
+          requestId: '',
         });
       }
 
@@ -879,15 +897,82 @@ define([], () => {
 
       const recent = listRequests().slice(0, 6);
 
+      // Extra datasets for the dashboard panels behind each KPI.
+      const approverPoints = ROLES.map((role) => ({
+        id: role.id,
+        series: 'Waiting',
+        group: role.role,
+        value: pending.filter((r) => (waitingStep(r) || {}).roleId === role.id).length,
+        color: '#c68a1d',
+      }));
+
+      const waitingLongest = pending
+        .map((r) => {
+          const step = waitingStep(r);
+          return {
+            id: r.id,
+            title: r.title,
+            priority: r.priority,
+            waitingFor: step ? `${step.name} (${step.role})` : '',
+            ageDays: Math.max(0, -dayDiff(r.requestedOn)),
+          };
+        })
+        .sort((a, b) => b.ageDays - a.ageDays)
+        .slice(0, 6);
+
+      const healthPoints = health.map((h) => ({
+        id: h.key,
+        series: 'Average health',
+        group: h.category,
+        value: h.avg,
+        color: h.tone === 'danger' ? '#c74634' : h.tone === 'warn' ? '#d99a3d' : '#4c825c',
+      }));
+
+      const downList = down.map((e) => {
+        const req = reqs.find((r) => r.equipmentId === e.id && ['Draft', 'Pending approval', 'Approved', 'In progress'].includes(r.status));
+        return {
+          id: e.id,
+          name: e.name,
+          location: e.location,
+          text: req ? `${req.id} · ${req.status}` : 'No request raised yet',
+        };
+      });
+
+      const WO_COLORS = { Scheduled: '#2e7d99', 'In progress': '#4f64a8', Completed: '#4c825c' };
+      const woPoints = ['Scheduled', 'In progress', 'Completed'].map((st) => ({
+        id: st,
+        series: st,
+        group: 'Work orders',
+        value: s.workOrders.filter((w) => w.status === st).length,
+        color: WO_COLORS[st],
+      }));
+      const woActive = s.workOrders
+        .filter((w) => w.status === 'In progress')
+        .slice(0, 6)
+        .map((w) => ({ id: w.id, title: w.title, equipmentName: w.equipmentName, technician: w.technician, progress: w.progress }));
+
+      const overduePm = eqs
+        .filter((e) => e.pmDays < 0)
+        .sort((a, b) => a.pmDays - b.pmDays)
+        .map((e) => ({ id: e.id, name: e.name, location: e.location, when: `due ${relDays(e.nextPm)}` }));
+
       return {
         kpis,
         statusPoints,
         weeklyPoints,
         totalRequests: reqs.length,
         health,
+        healthPoints,
         attention: attention.slice(0, 6),
         upcomingPm,
+        overduePm,
         recent,
+        approverPoints,
+        waitingLongest,
+        downList,
+        woPoints,
+        woActive,
+        totalWorkOrders: s.workOrders.length,
         down: down.length,
         pending: pending.length,
         pmDue,
@@ -1130,6 +1215,32 @@ define([], () => {
           'Not started': 'draft',
         }[status] || 'draft'
       );
+    }
+
+    /** Redwood badge classes (JET oj-badge) for a request, work order or approval step status. */
+    badgeClass(status) {
+      const variant = {
+        'Pending approval': 'warning',
+        Waiting: 'warning',
+        Approved: 'info',
+        Scheduled: 'info',
+        'In progress': 'info',
+        Completed: 'success',
+        Rejected: 'danger',
+      }[status];
+      return `oj-badge oj-badge-subtle${variant ? ` oj-badge-${variant}` : ''}`;
+    }
+
+    /** Redwood badge classes for a priority: only High and Critical stand out. */
+    priorityBadgeClass(priority) {
+      const variant = { Critical: 'danger', High: 'warning' }[priority];
+      return `oj-badge${variant ? ` oj-badge-${variant}` : ' oj-badge-subtle'}`;
+    }
+
+    /** Redwood badge classes for an equipment status. */
+    equipmentBadgeClass(status) {
+      const variant = { Running: 'success', Maintenance: 'warning', Down: 'danger' }[status];
+      return `oj-badge oj-badge-subtle${variant ? ` oj-badge-${variant}` : ''}`;
     }
 
     priorityTone(priority) {

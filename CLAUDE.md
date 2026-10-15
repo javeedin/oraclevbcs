@@ -1,54 +1,69 @@
 # CLAUDE.md: working on this Visual Builder app
 
-This repo is an **Oracle Visual Builder (VB) visual application**, not a React or Node app.
-VB reads the JSON/HTML/JS files at runtime; there is no bundler and no JSX.
+This repo is an **Oracle Visual Builder (VB) visual application** built on **Oracle's Redwood page
+templates** (the `oj-sp` components), not a React or Node app. VB reads the JSON/HTML/JS files at
+runtime; there is no bundler and no JSX.
 
 ## Layout
 
 ```
-visual-application.json            app metadata (VB/JET versions) - do not hand-edit versions
-package.json, Gruntfile.js         grunt-vb-build tooling (build/serve/audit/package). Needs Node 20.
+visual-application.json            VB 25.10 runtime, JET 18.1.4 - do not hand-edit versions
+settings/dependencies.json         oj-sp components available to the app (as in Oracle's Redwood starter)
+package.json, Gruntfile.js         grunt-vb-build 2510 tooling (build/serve/serve:cdn/audit/package). Node 20.
 webApps/maint/
   index.html                       VB entry page
-  app-flow.json / app-flow.js      app variables (activeNav, counts, messages, prefillEquipmentId),
-                                   CSS import, and the sample data store + formatters
-  pages/shell-page.*               shell: header, sliding menu (oj-drawer-layout), toasts, router
-  pages/shell-page-chains/         initShell, toggleNav, navigate, resetDemo
-  flows/<flow>/<flow>-flow.json    one flow per menu item; defaultPage is its only page
+  app-flow.json                    requirejs paths/bundles for oj-sp on Oracle's CDN, app variables
+                                   (counts, messages, prefillEquipmentId, openRequestId), CSS import
+  app-flow.js                      define(['oj-sp/spectra-shell/config/config']) + sample data store
+  settings/dependencies.json       oj-sp components this web app uses (must list every oj-sp-* tag)
+  pages/shell-page.*               oj-sp-pillar-theme, header, oj-sp-in-app-navigation, toasts, router
+  pages/shell-page-chains/         initShell, navigate, resetDemo
+  flows/<flow>/<flow>-flow.json    one flow per navigation item
   flows/<flow>/pages/<page>-page.{json,html,js} and <page>-page-chains/
-  resources/css/app.css            all styling, mx- prefix, tokens in :root
+  resources/css/app.css            layout inside the templates only: mx- prefix, --oj-core-* variables
 ```
 
-| Menu item | Flow | Page |
-|---|---|---|
-| Dashboard | dashboard | overview |
-| Raise request | request | raise-request |
-| My requests | requests | my-requests |
-| Send for approval | approval | send-approval |
-| Browse equipment | equipment | browse-equipment |
-| Approval inbox | inbox | approval-inbox |
-| Work orders | workorders | work-orders |
+| Navigation item | Flow | Pages (default first) | Redwood template |
+|---|---|---|---|
+| Home | home | welcome | oj-sp-welcome-page + oj-sp-object-card |
+| Dashboard | dashboard | overview | oj-sp-dashboard-landing-page + scoreboard / dashboard-grid / dashboard-panel |
+| Requests | requests | my-requests, raise-request, send-approval | smart-search-page; simple-create-edit for the other two |
+| Equipment | equipment | browse-equipment | oj-sp-smart-search-page + oj-sp-object-card |
+| Approvals | inbox | approval-inbox | oj-sp-smart-search-page |
+| Work orders | workorders | work-orders | oj-sp-smart-search-page |
+
+Detail drawers are `oj-drawer-popup` with `oj-sp-general-drawer-template` inside.
 
 ## Rules
 
 1. **Every page is a triplet** `<name>-page.json/.html/.js`, plus `<name>-page-chains/` for chains.
 2. **Action chains are JS classes** (`codeChainsEnabled` is on). The class name must equal the
    file name. Use `async run(context, { param } = {})` so a call without parameters is safe.
-3. **Wiring events:** `on-oj-action="[[$listeners.x]]"` (JET) or `on-click="[[$listeners.x]]"`
-   (plain elements). The listener name must exist in the page JSON `eventListeners`. Parameters
-   use `{{ $event.detail.value }}`, or `{{ $current.data.id }}` / `{{ $current.row.id }}` inside
-   `oj-bind-for-each` and `oj-table` templates.
-4. **Navigation:** the shell shows a flow with `Actions.navigateToFlow(context, { flow })`.
-   A page inside a flow opens a sibling flow with `{ target: 'parent', flow }` (see goToChain).
-   Each page's entry chain sets `$application.variables.activeNav` so the menu highlights it.
-5. **Binding syntax:** `[[ ]]` one-way, `{{ }}` two-way. Page functions are `$functions.x()` in
+3. **Wiring events:** `on-oj-action` (JET), `on-click` (plain elements), `on-sp-primary-action`,
+   `on-sp-secondary-action`, `on-sp-cancel`, `on-sp-go-to-parent`, `on-sp-close`,
+   `on-sp-selection-action` (Redwood templates), `on-oj-item-action` (card lists:
+   `$event.detail.context.key` / `.data`). The listener must exist in the page JSON `eventListeners`.
+4. **Redwood templates:** use only attributes, slots and events seen in Oracle's Redwood samples
+   (e.g. `slot="search"` on smart search pages, `slot="main"` on simple create/edit, `slot="kpi"`
+   for the scoreboard). Import each as `oj-sp/<name>/loader` and list `<name>` in
+   `webApps/maint/settings/dependencies.json`.
+5. **Navigation:** the shell shows a flow with `Actions.navigateToFlow(context, { flow })`. A page
+   opens a sibling flow with `{ target: 'parent', flow, page? }` (goToChain) and a page of its own
+   flow with `Actions.navigateToPage(context, { page })` (openPageChain). The in-app navigation
+   highlights itself from `$page.currentFlow`. To open one request on arrival, set
+   `$application.variables.openRequestId` before navigating to Requests.
+6. **Binding syntax:** `[[ ]]` one-way, `{{ }}` two-way. Page functions are `$functions.x()` in
    HTML and `$page.functions.x()` in chains; app functions are `$application.functions.x()` in both.
-6. **Every JET component used in HTML must be imported** in the page JSON `imports.components`.
-7. **Collections** for oj-table / oj-chart / oj-select-single use `vb/ArrayDataProvider2`
-   variables; replace rows with `$page.variables.someADP.data = newArray`.
-8. **Don't rely on `this`** inside page or app module methods; use module-level helper functions.
-9. **Styling:** classes in `app.css` with the `mx-` prefix and the `--mx-*` tokens.
-10. After any change run `npx grunt vb-process-local` and fix errors before committing.
+7. **Every component used in HTML must be imported** in the page JSON `imports.components`.
+8. **Collections** for oj-table / oj-list-view / oj-chart / oj-select-single / oj-sp-scoreboard use
+   `vb/ArrayDataProvider2` variables; replace rows with `$page.variables.someADP.data = newArray`.
+   The item type must declare every field the template reads (VB drops undeclared fields).
+9. **Don't rely on `this`** inside page or app module methods; use module-level helper functions.
+10. **Styling:** Redwood first (`oj-badge`, `oj-panel`, `oj-typography-*`, `oj-text-color-*`,
+    `oj-flex`); `app.css` only for layout, with the `mx-` prefix and `--oj-core-*` variables.
+    Status badges come from `badgeClass`, `priorityBadgeClass`, `equipmentBadgeClass` in app-flow.js.
+11. After any change run `npm run build` (or `npm run serve:cdn` if the build asks for the
+    Component Exchange) and fix errors before committing.
 
 ## Data
 

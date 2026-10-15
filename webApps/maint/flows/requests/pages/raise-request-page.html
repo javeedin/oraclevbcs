@@ -1,0 +1,133 @@
+<!--
+  Raise request: Oracle's Redwood simple create and edit page template (oj-sp-simple-create-edit).
+  The template draws the header with Save and Cancel; the form goes in its "main" slot.
+-->
+<oj-sp-simple-create-edit display-mode="mixed"
+  page-title="Raise request"
+  page-subtitle="Describe the problem and choose a priority. The approval route updates as you go."
+  primary-action.label="Save"
+  display-options.go-to-parent="true"
+  on-sp-primary-action="[[$listeners.savePrimaryAction]]"
+  on-sp-cancel="[[$listeners.cancelPage]]"
+  on-sp-go-to-parent="[[$listeners.cancelPage]]">
+
+  <div slot="main" class="oj-flex oj-sm-flex-wrap mx-create">
+
+    <!-- ============ Form ============ -->
+    <div class="oj-flex-item oj-sm-12 oj-lg-8 mx-create-form">
+      <oj-validation-group id="requestValidation">
+        <oj-form-layout max-columns="2" direction="row" label-edge="top">
+          <oj-select-single id="equipmentSelect" colspan="2"
+            label-hint="Equipment"
+            required="true"
+            placeholder="Search by name or asset ID"
+            data="[[ $variables.equipmentADP ]]"
+            value="{{ $variables.form.equipmentId }}"
+            on-value-changed="[[$listeners.equipmentChanged]]"></oj-select-single>
+          <oj-input-text colspan="2"
+            label-hint="Short title"
+            required="true"
+            length.max="80"
+            placeholder="For example: conveyor belt slipping on line 2"
+            value="{{ $variables.form.title }}"></oj-input-text>
+          <oj-text-area colspan="2"
+            label-hint="What did you observe?"
+            required="true"
+            rows="4"
+            length.max="1000"
+            length.counter="remaining"
+            placeholder="When it started, what you saw or heard, and anything already tried"
+            value="{{ $variables.form.description }}"></oj-text-area>
+          <oj-select-single
+            label-hint="Request type"
+            required="true"
+            data="[[ $variables.typeADP ]]"
+            value="{{ $variables.form.type }}"
+            on-value-changed="[[$listeners.typeChanged]]"></oj-select-single>
+          <oj-radioset class="oj-choice-direction-row" label-hint="Priority"
+            value="{{ $variables.form.priority }}"
+            on-value-changed="[[$listeners.priorityChanged]]"
+            help-hints.definition="[[ $functions.priorityHelp($variables.form.priority) ]]">
+            <oj-option value="Low">Low</oj-option>
+            <oj-option value="Medium">Medium</oj-option>
+            <oj-option value="High">High</oj-option>
+            <oj-option value="Critical">Critical</oj-option>
+          </oj-radioset>
+          <oj-input-date
+            label-hint="Needed by"
+            min="[[ $variables.minDate ]]"
+            value="{{ $variables.form.neededBy }}"></oj-input-date>
+          <oj-input-number
+            label-hint="Estimated cost (AED)"
+            min="0"
+            step="100"
+            value="{{ $variables.form.estCost }}"
+            on-value-changed="[[$listeners.costChanged]]"></oj-input-number>
+          <oj-switch
+            label-hint="Equipment is down"
+            value="{{ $variables.form.downtime }}"></oj-switch>
+          <oj-switch
+            label-hint="Send for approval now"
+            help-hints.definition="Turn off to keep it as a draft and send it later."
+            value="{{ $variables.form.sendNow }}"></oj-switch>
+        </oj-form-layout>
+      </oj-validation-group>
+
+      <oj-bind-if test="[[ $variables.errorText ]]">
+        <p class="oj-text-color-danger" role="alert"><oj-bind-text value="[[ $variables.errorText ]]"></oj-bind-text></p>
+      </oj-bind-if>
+    </div>
+
+    <!-- ============ Live side panel ============ -->
+    <div class="oj-flex-item oj-sm-12 oj-lg-4 mx-create-side">
+
+      <section class="oj-panel mx-panel">
+        <h2 class="oj-typography-subheading-xs">Selected equipment</h2>
+        <oj-bind-if test="[[ !$variables.equipment.id ]]">
+          <p class="oj-text-color-secondary">Choose equipment to see its status, health and preventive schedule here.</p>
+        </oj-bind-if>
+        <oj-bind-if test="[[ $variables.equipment.id ]]">
+          <div>
+            <div class="mx-row">
+              <span class="mx-row-main">
+                <span class="mx-block oj-typography-semi-bold"><oj-bind-text value="[[ $variables.equipment.name ]]"></oj-bind-text></span>
+                <span class="mx-block oj-text-color-secondary"><oj-bind-text value="[[ $variables.equipment.id + ' · ' + $variables.equipment.location ]]"></oj-bind-text></span>
+              </span>
+              <span :class="[[ $application.functions.equipmentBadgeClass($variables.equipment.status) ]]"><oj-bind-text value="[[ $variables.equipment.status ]]"></oj-bind-text></span>
+            </div>
+            <dl class="mx-facts">
+              <div><dt>Health</dt><dd><oj-bind-text value="[[ $variables.equipment.health + '%' ]]"></oj-bind-text></dd></div>
+              <div><dt>Criticality</dt><dd><oj-bind-text value="[[ $variables.equipment.criticality ]]"></oj-bind-text></dd></div>
+              <div><dt>Last service</dt><dd><oj-bind-text value="[[ $application.functions.fmtDate($variables.equipment.lastService) ]]"></oj-bind-text></dd></div>
+              <div><dt>Next PM</dt><dd><oj-bind-text value="[[ $application.functions.fmtDate($variables.equipment.nextPm) + ' (' + $application.functions.relDays($variables.equipment.nextPm) + ')' ]]"></oj-bind-text></dd></div>
+            </dl>
+            <oj-bind-if test="[[ $variables.equipment.openRequests > 0 ]]">
+              <p class="oj-text-color-warning"><oj-bind-text value="[[ 'This asset already has ' + $variables.equipment.openRequests + ' open ' + $application.functions.plural($variables.equipment.openRequests, 'request', 'requests') + '. Check Requests so you do not raise a duplicate.' ]]"></oj-bind-text></p>
+            </oj-bind-if>
+            <oj-button chroming="borderless" on-oj-action="[[$listeners.viewEquipment]]">Open the equipment list</oj-button>
+          </div>
+        </oj-bind-if>
+      </section>
+
+      <section class="oj-panel mx-panel">
+        <h2 class="oj-typography-subheading-xs">
+          <oj-bind-text value="[[ 'Approval route · ' + $variables.route.length + ' ' + $application.functions.plural($variables.route.length, 'step', 'steps') ]]"></oj-bind-text>
+        </h2>
+        <ol class="mx-steps">
+          <oj-bind-for-each data="[[ $variables.route ]]">
+            <template>
+              <li class="mx-step">
+                <span class="mx-step-num" aria-hidden="true"><oj-bind-text value="[[ $current.data.level ]]"></oj-bind-text></span>
+                <span class="mx-step-text">
+                  <span class="mx-block oj-typography-semi-bold"><oj-bind-text value="[[ $current.data.role ]]"></oj-bind-text></span>
+                  <span class="mx-block oj-text-color-secondary"><oj-bind-text value="[[ $current.data.name + ' · ' + $current.data.reason ]]"></oj-bind-text></span>
+                </span>
+              </li>
+            </template>
+          </oj-bind-for-each>
+        </ol>
+        <p class="oj-text-color-secondary oj-typography-body-sm">Critical requests and anything from AED 10,000 also go to the plant manager. Safety requests also go to the HSE officer.</p>
+      </section>
+    </div>
+  </div>
+</oj-sp-simple-create-edit>

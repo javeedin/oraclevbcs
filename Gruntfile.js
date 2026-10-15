@@ -12,6 +12,12 @@
  *
  * Optional: add --local to vb-process-local to resolve the environment placeholders
  * that vb-deploy normally fills in on a VB runtime instance.
+ *
+ * Redwood components: settings/dependencies.json lists the oj-sp components, and
+ * app-flow.json maps oj-sp to Oracle's CDN. If a local vb-process-local ever asks for
+ * the Component Exchange (it does that for listed components), use "npm run serve:cdn":
+ * it builds from a copy in .local-src/ without the component list, so the templates
+ * load straight from Oracle's CDN through the app-flow.json mapping.
  */
 module.exports = (grunt) => {
   require('load-grunt-tasks')(grunt);
@@ -29,4 +35,28 @@ module.exports = (grunt) => {
       'env.profileId': 'base_configuration',
     });
   }
+
+  grunt.registerTask(
+    'local-sources',
+    'Copies the app to .local-src/ with empty component-dependencies (local builds without the Component Exchange).',
+    () => {
+      const dest = '.local-src';
+      if (grunt.file.exists(dest)) {
+        grunt.file.delete(dest);
+      }
+      const files = grunt.file.expand({ dot: true, nodir: true }, [
+        'visual-application.json',
+        'settings/**',
+        'webApps/**',
+        'businessObjects/**',
+        'services/**',
+        'processes/**',
+      ]);
+      files.forEach((file) => grunt.file.copy(file, `${dest}/${file}`));
+      grunt.file
+        .expand([`${dest}/settings/dependencies.json`, `${dest}/webApps/*/settings/dependencies.json`])
+        .forEach((file) => grunt.file.write(file, `${JSON.stringify({ 'component-dependencies': {} }, null, 2)}\n`));
+      grunt.log.ok(`Copied ${files.length} files to ${dest}/ without component-dependencies.`);
+    },
+  );
 };

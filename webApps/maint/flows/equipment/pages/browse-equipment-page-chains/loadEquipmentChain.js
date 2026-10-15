@@ -9,7 +9,7 @@ define([
 ) => {
   'use strict';
 
-  /** Loads the equipment list when the page opens. */
+  /** Loads the equipment list when the page opens and applies the current filters. */
   class loadEquipmentChain extends ActionChain {
 
     /**
@@ -18,17 +18,19 @@ define([
     async run(context) {
       const { $page, $application } = context;
 
-      $application.variables.activeNav = 'equipment';
-
       // Sample data. Live version: GET /equipment from ORDS (same fields).
       const all = $application.functions.equipmentList();
       $page.variables.all = all;
-      $page.variables.stats = $page.functions.stats(all);
+      const stats = $page.functions.stats(all);
+      $page.variables.stats = stats;
+      $page.variables.subtitle = $page.functions.subtitle(stats);
+      $page.variables.categoryOptionsADP.data = $page.functions.categoryOptions(all);
 
-      const shown = $page.functions.filterList(all, $page.variables.searchText, $page.variables.category, $page.variables.status);
-      $page.variables.shown = shown;
+      const v = $page.variables;
+      const shown = $page.functions.filterList(all, v.searchText, v.category, v.status);
+      $page.variables.cardsADP.data = shown;
       $page.variables.tableADP.data = shown;
-      $page.variables.categoryChips = $page.functions.categoryChips(all, $page.variables.category);
+      $page.variables.shownCount = shown.length;
     }
   }
 

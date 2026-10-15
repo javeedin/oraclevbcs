@@ -9,7 +9,7 @@ define([
 ) => {
   'use strict';
 
-  /** Loads what is waiting for the chosen role (on page entry and when a role tab is clicked). */
+  /** Loads what is waiting for the chosen role (on page entry and when "Acting as" changes). */
   class loadInboxChain extends ActionChain {
 
     /**
@@ -20,7 +20,6 @@ define([
     async run(context, { roleId } = {}) {
       const { $page, $application } = context;
 
-      $application.variables.activeNav = 'inbox';
       if (roleId) {
         $page.variables.role = roleId;
       }
@@ -28,7 +27,9 @@ define([
       // Sample data. Live version: GET /approvals?role={role}&status=Waiting from ORDS.
       const counts = $application.functions.counts();
       $application.variables.counts = counts;
-      $page.variables.items = $application.functions.inbox($page.variables.role);
+      const all = $application.functions.inbox($page.variables.role);
+      $page.variables.allItems = all;
+      $page.variables.items = $page.functions.filterItems(all, $page.variables.searchText);
       $page.variables.roleTabs = $page.functions.roleTabs($application.functions.roles(), counts, $page.variables.role);
     }
   }

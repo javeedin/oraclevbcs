@@ -21,8 +21,6 @@ define([
     async run(context) {
       const { $page, $application } = context;
 
-      $application.variables.activeNav = 'request';
-
       // Sample data. Live version: GET /equipment?fields=id,name from ORDS.
       $page.variables.equipmentADP.data = $application.functions.equipmentOptions();
       $page.variables.typeADP.data = $application.functions.typeOptions();

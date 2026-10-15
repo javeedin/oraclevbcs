@@ -9,7 +9,7 @@ define([
 ) => {
   'use strict';
 
-  /** Builds the dashboard every time the page opens. */
+  /** Builds the scoreboard and every panel each time the dashboard opens. */
   class loadOverviewChain extends ActionChain {
 
     /**
@@ -18,14 +18,19 @@ define([
     async run(context) {
       const { $page, $application } = context;
 
-      $application.variables.activeNav = 'dashboard';
-
-      // Sample data. Live version: one ORDS GET returning the same model.
+      // Sample data. Live version: GET /maintenance/dashboard from ORDS, returning the same model.
       const model = $application.functions.dashboard();
-
       $page.variables.model = model;
+      $page.variables.subtitle = $page.functions.subtitle(model);
+
       $page.variables.statusADP.data = model.statusPoints;
       $page.variables.weeklyADP.data = model.weeklyPoints;
+      $page.variables.approverADP.data = model.approverPoints;
+      $page.variables.healthADP.data = model.healthPoints;
+      $page.variables.woADP.data = model.woPoints;
+
+      // Scoreboard items: id, title, metric, meta. Set last, so the panels have data when it renders.
+      $page.variables.kpis = model.kpis;
       $application.variables.counts = $application.functions.counts();
     }
   }
