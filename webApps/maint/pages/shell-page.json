@@ -1,5 +1,5 @@
 {
-  "description": "Application shell on Oracle's Redwood templates: pillar theme, app header, Redwood in-app navigation, toast messages and the router that shows the module flows.",
+  "description": "Application shell on Oracle's Redwood templates: pillar theme, app header, Redwood in-app navigation, toast messages, the router, and the Auto Pilot (Claude) panel with its settings.",
   "routerFlow": "home",
   "variables": {
     "navigationList": {
@@ -44,6 +44,65 @@
         "itemType": "navigationType",
         "keyAttributes": "id"
       }
+    },
+    "apChat": {
+      "type": "object[]",
+      "defaultValue": []
+    },
+    "apHistory": {
+      "type": "any",
+      "defaultValue": []
+    },
+    "apPrompt": {
+      "type": "string",
+      "defaultValue": ""
+    },
+    "apBusy": {
+      "type": "boolean",
+      "defaultValue": false
+    },
+    "apSuggestions": {
+      "type": "object[]",
+      "defaultValue": []
+    },
+    "apSettings": {
+      "type": "object",
+      "defaultValue": {
+        "hasKey": false,
+        "keyHint": "",
+        "model": "",
+        "modelLabel": "",
+        "remember": true,
+        "useData": true
+      }
+    },
+    "apForm": {
+      "type": "object",
+      "defaultValue": {
+        "apiKey": "",
+        "model": "claude-sonnet-5-5",
+        "remember": true,
+        "useData": true
+      }
+    },
+    "apModelsADP": {
+      "type": "vb/ArrayDataProvider2",
+      "defaultValue": {
+        "keyAttributes": "value",
+        "itemType": "optionType"
+      }
+    },
+    "apStatus": {
+      "type": "string",
+      "defaultValue": ""
+    },
+    "apStatusOk": {
+      "type": "boolean",
+      "defaultValue": false
+    },
+    "apTesting": {
+      "type": "boolean",
+      "defaultValue": false
     }
   },
   "metadata": {},
@@ -51,6 +110,10 @@
     "navigationType": {
       "id": "string",
       "icon": "string",
+      "label": "string"
+    },
+    "optionType": {
+      "value": "string",
       "label": "string"
     }
   },
@@ -98,6 +161,121 @@
           "chain": "resetDemoChain"
         }
       ]
+    },
+    "openAutopilot": {
+      "chains": [
+        {
+          "chain": "toggleAutopilotChain",
+          "parameters": {
+            "open": true
+          }
+        }
+      ]
+    },
+    "closeAutopilot": {
+      "chains": [
+        {
+          "chain": "toggleAutopilotChain",
+          "parameters": {
+            "open": false
+          }
+        }
+      ]
+    },
+    "autopilotOpenedChanged": {
+      "chains": [
+        {
+          "chain": "autopilotSendChain",
+          "parameters": {
+            "opened": "{{ $event.detail.value }}"
+          }
+        }
+      ]
+    },
+    "sendPrompt": {
+      "chains": [
+        {
+          "chain": "autopilotSendChain"
+        }
+      ]
+    },
+    "promptKeydown": {
+      "chains": [
+        {
+          "chain": "autopilotSendChain",
+          "parameters": {
+            "key": "{{ $event.key }}",
+            "ctrl": "{{ $event.ctrlKey || $event.metaKey }}"
+          }
+        }
+      ]
+    },
+    "askSuggestion": {
+      "chains": [
+        {
+          "chain": "autopilotSendChain",
+          "parameters": {
+            "text": "{{ $current.data.prompt }}"
+          }
+        }
+      ]
+    },
+    "newChat": {
+      "chains": [
+        {
+          "chain": "newChatChain"
+        }
+      ]
+    },
+    "openSettings": {
+      "chains": [
+        {
+          "chain": "autopilotSettingsChain",
+          "parameters": {
+            "action": "open"
+          }
+        }
+      ]
+    },
+    "saveSettings": {
+      "chains": [
+        {
+          "chain": "autopilotSettingsChain",
+          "parameters": {
+            "action": "save"
+          }
+        }
+      ]
+    },
+    "testSettings": {
+      "chains": [
+        {
+          "chain": "autopilotSettingsChain",
+          "parameters": {
+            "action": "test"
+          }
+        }
+      ]
+    },
+    "removeKey": {
+      "chains": [
+        {
+          "chain": "autopilotSettingsChain",
+          "parameters": {
+            "action": "remove"
+          }
+        }
+      ]
+    },
+    "closeSettings": {
+      "chains": [
+        {
+          "chain": "autopilotSettingsChain",
+          "parameters": {
+            "action": "close"
+          }
+        }
+      ]
     }
   },
   "imports": {
@@ -116,6 +294,30 @@
       },
       "oj-messages": {
         "path": "ojs/ojmessages"
+      },
+      "oj-drawer-popup": {
+        "path": "ojs/ojdrawerpopup"
+      },
+      "oj-dialog": {
+        "path": "ojs/ojdialog"
+      },
+      "oj-text-area": {
+        "path": "ojs/ojinputtext"
+      },
+      "oj-input-password": {
+        "path": "ojs/ojinputtext"
+      },
+      "oj-select-single": {
+        "path": "ojs/ojselectsingle"
+      },
+      "oj-switch": {
+        "path": "ojs/ojswitch"
+      },
+      "oj-form-layout": {
+        "path": "ojs/ojformlayout"
+      },
+      "oj-progress-bar": {
+        "path": "ojs/ojprogress-bar"
       }
     }
   },

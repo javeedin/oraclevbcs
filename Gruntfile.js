@@ -13,11 +13,12 @@
  * Optional: add --local to vb-process-local to resolve the environment placeholders
  * that vb-deploy normally fills in on a VB runtime instance.
  *
- * Redwood components: settings/dependencies.json lists the oj-sp components, and
- * app-flow.json maps oj-sp to Oracle's CDN. If a local vb-process-local ever asks for
- * the Component Exchange (it does that for listed components), use "npm run serve:cdn":
- * it builds from a copy in .local-src/ without the component list, so the templates
- * load straight from Oracle's CDN through the app-flow.json mapping.
+ * Redwood components: settings/dependencies.json lists the oj-sp components (VB Studio
+ * resolves them through its Component Exchange), and app-flow.json maps oj-sp to Oracle's
+ * CDN. A local vb-process-local stops with "Missing mandatory component exchange URL"
+ * for listed components, so "npm run build" / "npm run serve" first copy the app to
+ * .local-src/ without the component list (task local-sources) and build that copy:
+ * the templates then load straight from Oracle's CDN through the app-flow.json mapping.
  */
 module.exports = (grunt) => {
   require('load-grunt-tasks')(grunt);

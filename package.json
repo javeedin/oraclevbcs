@@ -7,9 +7,10 @@
         "node": ">=20 <23"
     },
     "scripts": {
-        "build": "grunt vb-clean vb-process-local",
-        "serve": "grunt vb-clean vb-process-local && grunt vb-serve:webApps/maint --port=8888 --open",
-        "serve:cdn": "grunt vb-clean local-sources && grunt vb-process-local --git-sources=.local-src && grunt vb-serve:webApps/maint --port=8888 --open",
+        "build": "grunt vb-clean local-sources && grunt vb-process-local --git-sources=.local-src",
+        "serve": "npm run build && grunt vb-serve:webApps/maint --port=8888 --open",
+        "serve:cdn": "npm run serve",
+        "build:exchange": "grunt vb-clean vb-process-local",
         "audit": "grunt vb-audit",
         "package": "grunt vb-process-local vb-package",
         "lint": "eslint \"webApps/**/*.js\""

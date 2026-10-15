@@ -1,8 +1,10 @@
 # Maintenance module: Oracle Visual Builder sample on Redwood page templates
 
 A maintenance management app built with **Oracle's own Redwood page templates** (the `oj-sp`
-components that Fusion Applications and VB Studio's Redwood starter use), so it looks and behaves
-like an Oracle Redwood app. It runs on sample data stored in the browser, so no backend is needed.
+components that Fusion Applications and VB Studio's Redwood starter use), with a request
+**workflow view** and **Auto Pilot**, an assistant on Claude that answers questions about the
+module's data and about Oracle in general. It runs on sample data stored in the browser, so no
+backend is needed.
 
 > The earlier version with a hand-styled sliding menu is on the `feature/maintenance-redwood` branch.
 
@@ -10,17 +12,49 @@ like an Oracle Redwood app. It runs on sample data stored in the browser, so no 
 
 | Menu item | Redwood template | What it shows |
 |---|---|---|
-| Home | Welcome page (`oj-sp-welcome-page`) | Greeting banner with **Raise request** and **Browse equipment**, then object cards for what needs attention, shortcuts (Send for approval, Approval inbox, Work orders) and the latest requests |
-| Dashboard | Dashboard landing page (`oj-sp-dashboard-landing-page`, `oj-sp-scoreboard`, `oj-sp-dashboard-grid`, `oj-sp-dashboard-panel`) | Five KPIs; selecting one shows its panels: requests by status and per week, approvals waiting, equipment health and what is down, work orders, preventive maintenance due and overdue |
-| Requests | Smart search page (`oj-sp-smart-search-page`) | Search, status and "raised by" filters, the requests table, and a drawer (`oj-sp-general-drawer-template`) with the approval route and timeline |
-| ↳ Raise request | Simple create and edit (`oj-sp-simple-create-edit`) | Validated form, the selected equipment, and the approval route that updates as you type |
+| Home | Welcome page (`oj-sp-welcome-page`) | Greeting banner with **Raise request** and **Browse equipment**, five compact counters, what needs attention, the latest requests, and Auto Pilot questions |
+| Dashboard | Dashboard landing page + scoreboard | Five KPIs; selecting one shows a compact row of small charts and short lists |
+| Requests | Smart search page | Search, status and "raised by" filters, the requests table, and a drawer with **Details** and **Workflow** |
+| ↳ Raise request | Simple create and edit | Validated form, the selected equipment, and the approval route that updates as you type |
 | ↳ Send for approval | Simple create and edit | Tick drafts, see who approves each one, add a note, send |
-| Equipment | Smart search page + object cards | Search, category and status filters, cards or table, and a drawer with specs and history |
-| Approvals | Smart search page | "Acting as" supervisor, plant manager or HSE officer; approve, or reject with a required reason |
+| Equipment | Smart search page | Search, category and status filters, compact cards or a table, and a drawer with specs and history |
+| Approvals | Smart search page | "Acting as" supervisor, plant manager or HSE officer; approve, reject with a reason, or view the workflow |
 | Work orders | Smart search page | Board with Scheduled, In progress and Completed lanes; start and complete work |
 
 The shell is the same as VB's Redwood starter: `oj-sp-pillar-theme` around everything and
-**`oj-sp-in-app-navigation`** to move between the six areas.
+**`oj-sp-in-app-navigation`** to move between the six areas. The header has **Auto Pilot** and
+**Settings**.
+
+### Workflow view
+
+Open any request and switch the drawer to **Workflow** (or click **Workflow** next to a request ID,
+**View workflow** in Approvals, or the request link on a work order). It draws the request as a
+flow: raised, sent, each approver, work order, work, completed. Each step shows who and when; the
+step it is waiting on is highlighted; a rejection shows where it stopped and why; approver steps
+the rules skip are drawn dashed with the reason (for example "High priority and AED 3,400: the
+plant manager only approves Critical requests or AED 10,000 and above").
+
+### Auto Pilot (Claude)
+
+1. Get a Claude API key in the [Claude Console](https://platform.claude.com/settings/keys).
+2. Click **Settings** in the header, paste the key, choose a model, and **Test connection**.
+3. Click **Auto Pilot** and ask, for example:
+   - *What needs my attention today?*
+   - *Which requests are waiting for the plant manager, and for how long?*
+   - *Raise a draft request: chiller CH-02 is very noisy since this morning, high priority.*
+   - *Explain the Procure to Pay flow in Oracle Fusion.* / *How do I call a Fusion REST API from VB?*
+
+Auto Pilot calls the Claude Messages API directly from the browser. It looks up the live data
+through tools (overview, requests, equipment, approval inboxes, work orders, approval routes) and
+can **save draft requests**; it never sends anything for approval. The panel shows what it looked
+up for each answer. Turn off "Let Auto Pilot read the maintenance data" in Settings for general
+questions only.
+
+**About the key:** it is kept in this browser only (or only until you reload, if "Remember" is
+off) and is sent only to `api.anthropic.com`. That is fine for a demo. For production, call Claude
+from a server-side proxy (ORDS, OIC or another backend) so the key never reaches the browser.
+In VB Studio, if Auto Pilot says it cannot reach api.anthropic.com, the instance's security policy
+is blocking browser calls to it; the server-side proxy is then the way to go.
 
 **Approval rules** (worked out per request):
 1. Maintenance supervisor approves every request.
@@ -34,53 +68,45 @@ equipment back in service.
 
 ## 1. Run it locally
 
-You need **Node.js 20** and Git. The build tools are now the 25.10 ones (the same as Oracle's
-Redwood starter app), so run `npm install` again after you switch to this branch.
+You need **Node.js 20** and Git.
 
 ```powershell
 cd C:\javeed\oraclevbcs
-git fetch
-git checkout feature/maintenance-redwood-templates
+git pull
 
 # Put the portable Node 20 first for this window:
 $env:Path = "C:\tools\node20;" + $env:Path
-node -v
 
 npm install
 npm run serve
 ```
 
-`npm run serve` cleans, builds and opens **http://localhost:8888**. It keeps running until you
-press **Ctrl+C**. The Redwood templates, JET and the VB runtime all load from Oracle's CDN
-(static.oracle.com), so you need to be online.
+`npm run serve` builds and opens **http://localhost:8888**; it keeps running until you press
+**Ctrl+C**. If port 8888 is busy (an earlier run is still open), close that window or run
+`npx grunt vb-serve:webApps/maint --port=8889 --open`. The Redwood templates, JET and the VB runtime
+load from Oracle's CDN, so you need to be online.
 
-**If the build stops and asks for a Component Exchange URL**, run this instead:
+Why the build copies the app first: VB Studio resolves the Redwood components listed in
+`settings/dependencies.json` through its Component Exchange, which a local build can't reach
+("Missing mandatory component exchange URL"). `npm run build` therefore builds a copy in
+`.local-src/` without that list, and the templates load from Oracle's CDN through the mapping in
+`app-flow.json`. Your sources don't change.
 
-```powershell
-npm run serve:cdn
-```
-
-It builds from a copy of the app without the component list, and the templates still load from
-Oracle's CDN through the mapping in `app-flow.json`. Nothing in your sources changes.
-
-In VS Code the same steps are tasks: **Terminal > Run Task > VB: install build tools**, then
-**VB: local preview (port 8888)** (or the *Redwood from CDN only* variant).
+In VS Code: **Terminal > Run Task > VB: install build tools**, then **VB: local preview (port 8888)**.
 
 ### A five-minute test
 
-1. **Home:** the banner greets you and shows what is waiting. Click a card, for example a
-   critical request, and the app opens the right place.
+1. **Home:** click a counter or a "needs attention" row; the app opens the right place.
 2. **Dashboard:** click each KPI in the scoreboard; the panels below change.
 3. **Equipment:** search "krones", pick the HVAC category, switch to Table. Open an asset, then
    **Raise request for this asset**.
 4. **Raise request:** the equipment is already chosen. Set priority to **Critical** and type to
-   **Safety**; the approval route grows to three steps. **Save**. Requests opens with your
-   request in the drawer.
-5. **Approvals:** approve it as Maintenance supervisor, then switch "Acting as" to Plant manager
-   and HSE officer. The last approval creates a work order.
-6. **Work orders:** **Start work**, then **Mark complete**.
-7. **Requests:** use the banner to **Send for approval** your drafts.
-8. Try **Reject** in Approvals without a reason (it refuses), then with one.
+   **Safety**; the approval route grows to three steps. **Save**. Requests opens with your request.
+5. Switch the drawer to **Workflow**: three approvals ahead, the first one highlighted.
+6. **Approvals:** approve it as Maintenance supervisor, then switch "Acting as" to Plant manager
+   and HSE officer. Click **View workflow** between approvals to watch it move.
+7. **Work orders:** **Start work**, then **Mark complete**. The workflow ends at Completed.
+8. **Auto Pilot:** add your key in **Settings**, then ask one of the suggested questions.
 
 **Reset sample data** in the header starts again.
 
@@ -103,12 +129,13 @@ visual-application.json           VB 25.10 runtime, JET 18.1.4
 settings/dependencies.json        Redwood (oj-sp) components available to the app
 webApps/maint/
   app-flow.json                   requirejs mapping for oj-sp on Oracle's CDN, app variables
-  app-flow.js                     loads oj-sp/spectra-shell/config/config + the sample data store
+  app-flow.js                     oj-sp config + sample data store + workflow builder + Auto Pilot
   settings/dependencies.json      Redwood components this web app uses
-  pages/shell-page.*              pillar theme, header, in-app navigation, toasts, router
+  pages/shell-page.*              pillar theme, header, in-app navigation, toasts, router,
+                                  Auto Pilot panel and settings
   flows/home/                     welcome page
   flows/dashboard/                dashboard landing page
-  flows/requests/                 my-requests, raise-request, send-approval pages
+  flows/requests/                 my-requests (with workflow view), raise-request, send-approval
   flows/equipment/                browse-equipment page
   flows/inbox/                    approval-inbox page
   flows/workorders/               work-orders page
@@ -130,12 +157,15 @@ service connection to ORDS that returns the same shape:
 | `dashboard()` | `GET /maintenance/dashboard` |
 | `equipmentList()`, `equipmentById(id)`, `equipmentRequests(id)` | `GET /equipment`, `GET /equipment/{id}`, `GET /equipment/{id}/requests` |
 | `requestList()`, `requestById(id)`, `drafts()` | `GET /requests`, `GET /requests/{id}`, `GET /requests?status=Draft` |
+| `requestWorkflow(id)` | `GET /requests/{id}/workflow` (or built from `GET /requests/{id}`) |
 | `createRequest(form, submit)` | `POST /requests` (+ `POST /requests/{id}/submit`) |
 | `sendForApproval(ids, note)` | `POST /requests/submit` |
 | `inbox(role)`, `decide(id, role, approve, comment)` | `GET /approvals?role=`, `POST /requests/{id}/decision` |
 | `workOrderList()`, `advanceWorkOrder(id)` | `GET /work-orders`, `PATCH /work-orders/{id}` |
+| `askAutopilot(history, text)` | `POST /assistant/messages` on your proxy, which holds the Claude key |
 
-The approval rules then move to PL/SQL, so the route is decided on the server.
+The approval rules then move to PL/SQL, so the route is decided on the server. Auto Pilot's tools
+keep working unchanged as long as the store methods return the same shapes.
 
 ## 5. How this was checked
 
@@ -148,9 +178,12 @@ The Redwood templates come from Oracle's CDN and can only render in a browser, s
   every component is imported and listed in `dependencies.json`, and every variable, function,
   flow, page and CSS class referenced exists;
 - ESLint passes on all page modules and chains;
-- every chain was run against a mock VB context, every binding in the HTML (including inside
-  list, table, chart and for-each templates) was evaluated against the resulting data, and every
-  listener was fired;
+- every chain was run against a mock VB context, every listener was fired, and every binding in
+  the HTML was evaluated for every row and item (9,000+ evaluations), including the workflow view
+  for a request in each status and a real Auto Pilot conversation;
+- Auto Pilot was run against a mock of the Claude Messages API that checks the headers and the
+  tool_use / tool_result pairing: tool lookups, saving a draft, a bad key, Ctrl+Enter, and a
+  question queued from Home;
 - the full journey (raise, three approvals, work order, complete; send drafts; reject with and
   without a reason; raise from an asset) was run through the real chains.
 

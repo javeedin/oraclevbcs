@@ -78,7 +78,8 @@
           "chain": "goToChain",
           "parameters": {
             "flow": "requests",
-            "requestId": "{{ $current.data.requestId }}"
+            "requestId": "{{ $current.data.requestId }}",
+            "view": "workflow"
           }
         }
       ]

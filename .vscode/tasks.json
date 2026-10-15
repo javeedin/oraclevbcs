@@ -11,25 +11,17 @@
     },
     {
       "label": "VB: build (validate sources)",
-      "detail": "grunt vb-clean vb-process-local - catches broken JSON, missing files and bad metadata before you push",
+      "detail": "npm run build - catches broken JSON, missing files and bad metadata before you push",
       "type": "shell",
-      "command": "npx grunt vb-clean vb-process-local",
+      "command": "npm run build",
       "group": { "kind": "build", "isDefault": true },
       "problemMatcher": []
     },
     {
       "label": "VB: local preview (port 8888)",
-      "detail": "Builds and serves webApps/maint at http://localhost:8888",
+      "detail": "Builds and serves webApps/maint at http://localhost:8888 (Redwood templates from Oracle's CDN)",
       "type": "shell",
-      "command": "npx grunt vb-clean vb-process-local && npx grunt vb-serve:webApps/maint --port=8888 --open",
-      "isBackground": true,
-      "problemMatcher": []
-    },
-    {
-      "label": "VB: local preview, Redwood from CDN only (port 8888)",
-      "detail": "Use this if the build asks for the Component Exchange: builds a copy without the component list; the Redwood templates load from Oracle's CDN",
-      "type": "shell",
-      "command": "npm run serve:cdn",
+      "command": "npm run serve",
       "isBackground": true,
       "problemMatcher": []
     },

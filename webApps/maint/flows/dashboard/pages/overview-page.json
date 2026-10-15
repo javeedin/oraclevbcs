@@ -1,6 +1,6 @@
 {
   "title": "Dashboard",
-  "description": "Redwood dashboard landing page: a scoreboard of five KPIs, and a dashboard grid of panels for the selected KPI",
+  "description": "Redwood dashboard landing page: a scoreboard of five KPIs, and a compact row of small charts and short lists for the selected KPI",
   "variables": {
     "model": {
       "type": "object",
@@ -160,12 +160,6 @@
       },
       "oj-sp-scoreboard": {
         "path": "oj-sp/scoreboard/loader"
-      },
-      "oj-sp-dashboard-grid": {
-        "path": "oj-sp/dashboard-grid/loader"
-      },
-      "oj-sp-dashboard-panel": {
-        "path": "oj-sp/dashboard-panel/loader"
       },
       "oj-switcher": {
         "path": "ojs/ojswitcher"

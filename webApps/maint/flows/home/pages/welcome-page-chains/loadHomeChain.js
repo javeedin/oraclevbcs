@@ -9,7 +9,7 @@ define([
 ) => {
   'use strict';
 
-  /** Builds the welcome banner text and the three card lists every time Home opens. */
+  /** Builds the banner text, the counters and the lists every time Home opens. */
   class loadHomeChain extends ActionChain {
 
     /**
@@ -26,12 +26,10 @@ define([
       $page.variables.pageTitle = `${$application.functions.greeting()}, Demo user`;
       $page.variables.overline = $application.functions.longToday();
       $page.variables.summary = $page.functions.summaryLine(model);
-
-      const attention = $page.functions.attentionCards(model.attention);
-      $page.variables.attentionCount = attention.length;
-      $page.variables.attentionADP.data = attention;
-      $page.variables.shortcutsADP.data = $page.functions.shortcuts(counts);
-      $page.variables.recentADP.data = $page.functions.requestCards(model.recent.slice(0, 3));
+      $page.variables.tiles = $page.functions.tiles(counts, model);
+      $page.variables.attention = $page.functions.attentionRows(model.attention);
+      $page.variables.recent = model.recent.slice(0, 5);
+      $page.variables.askChips = $application.functions.autopilotSuggestions().slice(0, 3);
     }
   }
 

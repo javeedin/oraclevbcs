@@ -46,7 +46,7 @@ define([
 
       const v = $page.variables;
       const shown = $page.functions.filterList(v.all, v.searchText, v.category, v.status);
-      $page.variables.cardsADP.data = shown;
+      $page.variables.shown = shown;
       $page.variables.tableADP.data = shown;
       $page.variables.shownCount = shown.length;
     }

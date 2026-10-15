@@ -1,6 +1,6 @@
 <!--
   Equipment: Oracle's Redwood smart search page template.
-  Cards are oj-sp-object-card items; the table view is an oj-table. Selecting an asset opens
+  Compact cards or an oj-table. Selecting an asset opens
   a drawer on the Redwood general drawer template.
 -->
 <oj-sp-smart-search-page class="oj-flex-item oj-sm-12 oj-md-12" display-mode="mixed"
@@ -46,21 +46,28 @@
       </div>
     </oj-bind-if>
 
-    <!-- ============ Cards ============ -->
+    <!-- ============ Cards (compact) ============ -->
     <oj-bind-if test="[[ $variables.view === 'cards' && $variables.shownCount > 0 ]]">
-      <oj-list-view class="mx-cards" display="card" aria-label="Equipment"
-        data="[[ $variables.cardsADP ]]" on-oj-item-action="[[$listeners.openCard]]">
-        <template slot="itemTemplate">
-          <li class="oj-sm-12 oj-md-6 oj-lg-4">
-            <oj-sp-object-card
-              primary-text="[[ $current.data.name ]]"
-              secondary-text="[[ $current.data.location ]]"
-              label="[[ $current.data.id + ' · ' + $current.data.category ]]"
-              badge.text="[[ $current.data.status ]]" badge.status="neutral" badge.style="strong"
-              display-options.horizontal-gauge="off" display-options.circular-gauge="off"></oj-sp-object-card>
-          </li>
-        </template>
-      </oj-list-view>
+      <div class="mx-eq-grid" role="list" aria-label="Equipment">
+        <oj-bind-for-each data="[[ $variables.shown ]]">
+          <template>
+            <button type="button" role="listitem" class="mx-eq-card" on-click="[[$listeners.openCard]]">
+              <span class="mx-eq-card-top">
+                <span class="mx-row-title"><oj-bind-text value="[[ $current.data.name ]]"></oj-bind-text></span>
+                <span :class="[[ $application.functions.equipmentBadgeClass($current.data.status) ]]"><oj-bind-text value="[[ $current.data.status ]]"></oj-bind-text></span>
+              </span>
+              <span class="mx-row-sub"><oj-bind-text value="[[ $current.data.id + ' · ' + $current.data.category + ' · ' + $current.data.location ]]"></oj-bind-text></span>
+              <span class="mx-eq-card-meter">
+                <oj-progress-bar class="mx-progress" value="[[ $current.data.health ]]" max="100" :aria-label="[[ 'Health ' + $current.data.health + '%' ]]"></oj-progress-bar>
+                <span class="oj-typography-body-xs"><oj-bind-text value="[[ $current.data.health + '%' ]]"></oj-bind-text></span>
+              </span>
+              <span :class="[[ 'mx-row-sub ' + ($current.data.pmState === 'overdue' ? 'oj-text-color-danger' : $current.data.pmState === 'due' ? 'oj-text-color-warning' : '') ]]">
+                <oj-bind-text value="[[ 'Next PM ' + $application.functions.relDays($current.data.nextPm) + ($current.data.openRequests ? ' · ' + $current.data.openRequests + ' open ' + $application.functions.plural($current.data.openRequests, 'request', 'requests') : '') ]]"></oj-bind-text>
+              </span>
+            </button>
+          </template>
+        </oj-bind-for-each>
+      </div>
     </oj-bind-if>
 
     <!-- ============ Table ============ -->

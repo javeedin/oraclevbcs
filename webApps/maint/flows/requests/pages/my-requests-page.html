@@ -53,6 +53,7 @@
       <template slot="requestTemplate">
         <span class="mx-block">
           <button type="button" class="mx-link" on-click="[[$listeners.openRequest]]"><oj-bind-text value="[[ $current.row.id ]]"></oj-bind-text></button>
+          <button type="button" class="mx-link mx-link-quiet" on-click="[[$listeners.openWorkflow]]" :aria-label="[[ 'Workflow of ' + $current.row.id ]]">Workflow</button>
         </span>
         <span class="mx-block oj-typography-semi-bold"><oj-bind-text value="[[ $current.row.title ]]"></oj-bind-text></span>
       </template>
@@ -105,6 +106,53 @@
     on-sp-close="[[$listeners.closeDetail]]">
 
     <div class="mx-drawer-body">
+      <oj-buttonset-one class="mx-drawer-tabs" value="{{ $variables.detailView }}" chroming="outlined" aria-label="View">
+        <oj-option value="details">Details</oj-option>
+        <oj-option value="workflow">Workflow</oj-option>
+      </oj-buttonset-one>
+
+      <!-- ============ Workflow: the request as a flow diagram ============ -->
+      <oj-bind-if test="[[ $variables.detailView === 'workflow' ]]">
+        <div>
+          <div class="mx-flow-head">
+            <span class="oj-typography-subheading-xs"><oj-bind-text value="[[ $variables.workflowHeadline ]]"></oj-bind-text></span>
+            <span class="mx-flow-legend" aria-hidden="true">
+              <span class="mx-flow-key is-done">Done</span>
+              <span class="mx-flow-key is-current">Now</span>
+              <span class="mx-flow-key is-pending">Next</span>
+              <span class="mx-flow-key is-skipped">Not needed</span>
+            </span>
+          </div>
+          <ol class="mx-flow" aria-label="Request workflow">
+            <oj-bind-for-each data="[[ $variables.workflow ]]">
+              <template>
+                <li :class="[[ 'mx-flow-step is-' + $current.data.state + ' is-' + $current.data.kind ]]">
+                  <span class="mx-flow-marker" aria-hidden="true"><oj-bind-text value="[[ $functions.flowMark($current.data) ]]"></oj-bind-text></span>
+                  <div class="mx-flow-box">
+                    <div class="mx-flow-top">
+                      <span class="oj-typography-semi-bold"><oj-bind-text value="[[ $current.data.label ]]"></oj-bind-text></span>
+                      <span :class="[[ $functions.flowBadge($current.data.state) ]]"><oj-bind-text value="[[ $current.data.stateLabel ]]"></oj-bind-text></span>
+                    </div>
+                    <span class="mx-block oj-text-color-secondary oj-typography-body-sm"><oj-bind-text value="[[ $current.data.sub ]]"></oj-bind-text></span>
+                    <oj-bind-if test="[[ $current.data.whenText ]]">
+                      <span class="mx-block oj-typography-body-sm"><oj-bind-text value="[[ $current.data.whenText ]]"></oj-bind-text></span>
+                    </oj-bind-if>
+                    <oj-bind-if test="[[ $current.data.comment ]]">
+                      <span class="mx-block mx-quote oj-typography-body-sm"><oj-bind-text value="[[ '“' + $current.data.comment + '”' ]]"></oj-bind-text></span>
+                    </oj-bind-if>
+                    <oj-bind-if test="[[ $current.data.kind === 'skip' ]]">
+                      <span class="mx-flow-branch oj-typography-body-xs"><oj-bind-text value="[[ $current.data.branch ]]"></oj-bind-text></span>
+                    </oj-bind-if>
+                  </div>
+                </li>
+              </template>
+            </oj-bind-for-each>
+          </ol>
+        </div>
+      </oj-bind-if>
+
+      <oj-bind-if test="[[ $variables.detailView !== 'workflow' ]]">
+      <div>
       <div class="mx-badges">
         <span :class="[[ $application.functions.badgeClass($variables.selected.status) ]]"><oj-bind-text value="[[ $variables.selected.status ]]"></oj-bind-text></span>
         <span :class="[[ $application.functions.priorityBadgeClass($variables.selected.priority) ]]"><oj-bind-text value="[[ $variables.selected.priority + ' priority' ]]"></oj-bind-text></span>
@@ -165,6 +213,8 @@
           </template>
         </oj-bind-for-each>
       </ol>
+      </div>
+      </oj-bind-if>
 
       <div class="mx-drawer-actions">
         <oj-button chroming="outlined" on-oj-action="[[$listeners.closeDetail]]">Close</oj-button>

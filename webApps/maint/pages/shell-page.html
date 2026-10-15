@@ -2,6 +2,7 @@
   Shell, laid out like Visual Builder's Redwood starter application:
   oj-sp-pillar-theme wraps everything, the flows render in oj-vb-content,
   and oj-sp-in-app-navigation switches between them.
+  Auto Pilot (Claude) is a side panel available from every page.
 -->
 <div id="pageContent">
   <oj-sp-pillar-theme id="ojspPillarTheme" pillar="gbu" theme="default" mode="mixed"
@@ -20,6 +21,8 @@
           <oj-bind-text value="[[ 'Approvals (' + $application.variables.counts.pending + ')' ]]"></oj-bind-text>
         </oj-button>
         <oj-button chroming="borderless" on-oj-action="[[$listeners.resetDemo]]" title="Put the sample data back to how it started">Reset sample data</oj-button>
+        <oj-button chroming="borderless" on-oj-action="[[$listeners.openSettings]]" title="Auto Pilot settings: Claude API key and model">Settings</oj-button>
+        <oj-button chroming="callToAction" on-oj-action="[[$listeners.openAutopilot]]" title="Ask Claude about this module or about Oracle">Auto Pilot</oj-button>
         <oj-avatar class="mx-appbar-avatar" size="xs" initials="DU" role="img" aria-label="Demo user" title="Demo user"></oj-avatar>
       </header>
 
@@ -40,4 +43,165 @@
       </div>
     </div>
   </oj-sp-pillar-theme>
+
+  <!-- ============ Auto Pilot panel (stays open while you use the app) ============ -->
+  <oj-drawer-popup id="autopilotDrawer" class="mx-ap-drawer" edge="end" modality="modeless" auto-dismiss="none"
+    opened="{{ $application.variables.autopilotOpen }}" on-opened-changed="[[$listeners.autopilotOpenedChanged]]"
+    aria-label="Auto Pilot">
+    <div class="mx-ap">
+      <div class="mx-ap-head">
+        <span class="mx-ap-title">
+          <span class="oj-typography-subheading-xs">Auto Pilot</span>
+          <span class="oj-text-color-secondary oj-typography-body-xs">
+            <oj-bind-text value="[[ $variables.apSettings.hasKey ? $variables.apSettings.modelLabel + ($variables.apSettings.useData ? ' · reads module data' : ' · general questions only') : 'Not connected' ]]"></oj-bind-text>
+          </span>
+        </span>
+        <oj-button chroming="borderless" on-oj-action="[[$listeners.newChat]]" disabled="[[ $variables.apBusy ]]">New chat</oj-button>
+        <oj-button chroming="borderless" on-oj-action="[[$listeners.openSettings]]">Settings</oj-button>
+        <oj-button chroming="borderless" on-oj-action="[[$listeners.closeAutopilot]]">Close</oj-button>
+      </div>
+
+      <oj-bind-if test="[[ !$variables.apSettings.hasKey ]]">
+        <div class="mx-banner mx-ap-setup" role="status">
+          <span class="mx-banner-text">Add your Claude API key to start. It stays in this browser and is sent only to Anthropic.</span>
+          <oj-button chroming="callToAction" on-oj-action="[[$listeners.openSettings]]">Add key</oj-button>
+        </div>
+      </oj-bind-if>
+
+      <div id="mxApLog" class="mx-ap-log" aria-live="polite">
+        <oj-bind-if test="[[ $variables.apChat.length === 0 ]]">
+          <div class="mx-ap-intro">
+            <p class="oj-typography-body-md oj-typography-semi-bold">Ask about requests, equipment, approvals and work orders, or anything Oracle.</p>
+            <p class="oj-text-color-secondary oj-typography-body-sm">Auto Pilot looks up the live data in this module and can save draft requests for you. Try:</p>
+            <div class="mx-chips mx-chips--stack">
+              <oj-bind-for-each data="[[ $variables.apSuggestions ]]">
+                <template>
+                  <button type="button" class="mx-chip" on-click="[[$listeners.askSuggestion]]"><oj-bind-text value="[[ $current.data.prompt ]]"></oj-bind-text></button>
+                </template>
+              </oj-bind-for-each>
+            </div>
+          </div>
+        </oj-bind-if>
+
+        <oj-bind-for-each data="[[ $variables.apChat ]]" as="msg">
+          <template>
+            <div :class="[[ 'mx-ap-msg is-' + msg.data.role ]]">
+              <oj-bind-if test="[[ msg.data.role === 'user' ]]">
+                <div class="mx-ap-bubble"><oj-bind-text value="[[ msg.data.text ]]"></oj-bind-text></div>
+              </oj-bind-if>
+              <oj-bind-if test="[[ msg.data.role !== 'user' ]]">
+                <div class="mx-ap-answer">
+                  <oj-bind-if test="[[ msg.data.tools.length > 0 ]]">
+                    <div class="mx-ap-tools" aria-label="What Auto Pilot looked up">
+                      <oj-bind-for-each data="[[ msg.data.tools ]]" as="tool">
+                        <template>
+                          <span class="oj-badge oj-badge-subtle"><oj-bind-text value="[[ tool.data.summary ]]"></oj-bind-text></span>
+                        </template>
+                      </oj-bind-for-each>
+                    </div>
+                  </oj-bind-if>
+                  <oj-bind-for-each data="[[ msg.data.blocks ]]" as="block">
+                    <template>
+                      <oj-bind-if test="[[ block.data.type === 'p' || block.data.type === 'h' ]]">
+                        <p :class="[[ block.data.type === 'h' ? 'mx-ap-h' : 'mx-ap-p' ]]">
+                          <oj-bind-for-each data="[[ block.data.segments ]]" as="seg">
+                            <template><span :class="[[ seg.data.cls ]]"><oj-bind-text value="[[ seg.data.text ]]"></oj-bind-text></span></template>
+                          </oj-bind-for-each>
+                        </p>
+                      </oj-bind-if>
+                      <oj-bind-if test="[[ block.data.type === 'li' ]]">
+                        <div :class="[[ 'mx-ap-li' + (block.data.indent ? ' mx-ap-li--sub' : '') ]]">
+                          <span class="mx-ap-marker"><oj-bind-text value="[[ block.data.marker ]]"></oj-bind-text></span>
+                          <span>
+                            <oj-bind-for-each data="[[ block.data.segments ]]" as="seg">
+                              <template><span :class="[[ seg.data.cls ]]"><oj-bind-text value="[[ seg.data.text ]]"></oj-bind-text></span></template>
+                            </oj-bind-for-each>
+                          </span>
+                        </div>
+                      </oj-bind-if>
+                      <oj-bind-if test="[[ block.data.type === 'code' ]]">
+                        <pre class="mx-ap-pre"><oj-bind-text value="[[ block.data.text ]]"></oj-bind-text></pre>
+                      </oj-bind-if>
+                      <oj-bind-if test="[[ block.data.type === 'table' ]]">
+                        <div class="mx-ap-table" role="table">
+                          <oj-bind-for-each data="[[ block.data.rows ]]" as="row">
+                            <template>
+                              <div :class="[[ 'mx-ap-tr' + (row.data.head ? ' mx-ap-th' : '') ]]" role="row">
+                                <oj-bind-for-each data="[[ row.data.cells ]]" as="cell">
+                                  <template><span class="mx-ap-td" role="cell"><oj-bind-text value="[[ cell.data.text ]]"></oj-bind-text></span></template>
+                                </oj-bind-for-each>
+                              </div>
+                            </template>
+                          </oj-bind-for-each>
+                        </div>
+                      </oj-bind-if>
+                    </template>
+                  </oj-bind-for-each>
+                  <oj-bind-if test="[[ msg.data.meta ]]">
+                    <span class="mx-ap-meta"><oj-bind-text value="[[ msg.data.meta ]]"></oj-bind-text></span>
+                  </oj-bind-if>
+                </div>
+              </oj-bind-if>
+            </div>
+          </template>
+        </oj-bind-for-each>
+
+        <oj-bind-if test="[[ $variables.apBusy ]]">
+          <div class="mx-ap-thinking" role="status">
+            <span class="oj-text-color-secondary oj-typography-body-sm">Auto Pilot is working on it…</span>
+            <oj-progress-bar class="mx-progress" value="-1" aria-label="Waiting for Claude"></oj-progress-bar>
+          </div>
+        </oj-bind-if>
+      </div>
+
+      <div class="mx-ap-compose">
+        <oj-text-area id="apPrompt" class="oj-form-control-full-width"
+          label-hint="Message Auto Pilot" label-edge="none"
+          rows="3"
+          placeholder="Ask about requests, equipment, approvals… or anything Oracle"
+          value="{{ $variables.apPrompt }}"
+          on-keydown="[[$listeners.promptKeydown]]"></oj-text-area>
+        <div class="mx-ap-compose-bar">
+          <span class="oj-text-color-secondary oj-typography-body-xs">Ctrl+Enter to send · answers can be wrong, check before you act</span>
+          <oj-button chroming="callToAction" disabled="[[ $variables.apBusy ]]" on-oj-action="[[$listeners.sendPrompt]]">Send</oj-button>
+        </div>
+      </div>
+    </div>
+  </oj-drawer-popup>
+
+  <!-- ============ Auto Pilot settings ============ -->
+  <oj-dialog id="apSettingsDialog" class="mx-dialog" dialog-title="Auto Pilot settings" cancel-behavior="icon">
+    <div slot="body">
+      <oj-form-layout max-columns="1" label-edge="top">
+        <oj-input-password id="apKeyField" class="oj-form-control-full-width"
+          label-hint="Claude API key"
+          value="{{ $variables.apForm.apiKey }}"
+          :placeholder="[[ $variables.apSettings.hasKey ? 'Saved key ' + $variables.apSettings.keyHint + ' (leave empty to keep it)' : 'sk-ant-...' ]]"
+          help-hints.definition="Create a key in the Claude Console under Settings > API keys."></oj-input-password>
+        <oj-select-single label-hint="Model"
+          data="[[ $variables.apModelsADP ]]"
+          value="{{ $variables.apForm.model }}"></oj-select-single>
+        <oj-switch label-hint="Remember the key in this browser" value="{{ $variables.apForm.remember }}"></oj-switch>
+        <oj-switch label-hint="Let Auto Pilot read the maintenance data and save draft requests" value="{{ $variables.apForm.useData }}"></oj-switch>
+      </oj-form-layout>
+
+      <oj-bind-if test="[[ $variables.apStatus ]]">
+        <p :class="[[ $variables.apStatusOk ? 'oj-text-color-success' : 'oj-text-color-danger' ]]" role="status"><oj-bind-text value="[[ $variables.apStatus ]]"></oj-bind-text></p>
+      </oj-bind-if>
+      <p class="oj-text-color-secondary oj-typography-body-sm">
+        The key stays in this browser and is sent only to api.anthropic.com. This is fine for a demo; for production,
+        call Claude from a server-side proxy (ORDS, OIC or another backend) so the key never reaches the browser.
+      </p>
+    </div>
+    <div slot="footer">
+      <oj-bind-if test="[[ $variables.apSettings.hasKey ]]">
+        <oj-button chroming="borderless" on-oj-action="[[$listeners.removeKey]]">Remove key</oj-button>
+      </oj-bind-if>
+      <oj-button chroming="outlined" disabled="[[ $variables.apTesting ]]" on-oj-action="[[$listeners.testSettings]]">
+        <oj-bind-text value="[[ $variables.apTesting ? 'Testing…' : 'Test connection' ]]"></oj-bind-text>
+      </oj-button>
+      <oj-button chroming="borderless" on-oj-action="[[$listeners.closeSettings]]">Cancel</oj-button>
+      <oj-button chroming="callToAction" on-oj-action="[[$listeners.saveSettings]]">Save</oj-button>
+    </div>
+  </oj-dialog>
 </div>

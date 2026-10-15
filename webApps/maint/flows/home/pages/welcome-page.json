@@ -1,6 +1,6 @@
 {
   "title": "Home",
-  "description": "Redwood welcome page: greeting banner with the main actions, what needs attention, shortcuts and recent requests",
+  "description": "Redwood welcome page: greeting banner with the main actions, compact counters, what needs attention, latest requests and Auto Pilot shortcuts",
   "variables": {
     "pageTitle": {
       "type": "string",
@@ -14,45 +14,25 @@
       "type": "string",
       "defaultValue": "Loading the latest maintenance picture..."
     },
-    "attentionADP": {
-      "type": "vb/ArrayDataProvider2",
-      "defaultValue": {
-        "keyAttributes": "id",
-        "itemType": "CardType"
-      }
+    "tiles": {
+      "type": "object[]",
+      "defaultValue": []
     },
-    "shortcutsADP": {
-      "type": "vb/ArrayDataProvider2",
-      "defaultValue": {
-        "keyAttributes": "id",
-        "itemType": "CardType"
-      }
+    "attention": {
+      "type": "object[]",
+      "defaultValue": []
     },
-    "recentADP": {
-      "type": "vb/ArrayDataProvider2",
-      "defaultValue": {
-        "keyAttributes": "id",
-        "itemType": "CardType"
-      }
+    "recent": {
+      "type": "object[]",
+      "defaultValue": []
     },
-    "attentionCount": {
-      "type": "number",
-      "defaultValue": 0
+    "askChips": {
+      "type": "object[]",
+      "defaultValue": []
     }
   },
   "metadata": {},
-  "types": {
-    "CardType": {
-      "id": "string",
-      "badge": "string",
-      "label": "string",
-      "title": "string",
-      "text": "string",
-      "flow": "string",
-      "page": "string",
-      "requestId": "string"
-    }
-  },
+  "types": {},
   "eventListeners": {
     "vbEnter": {
       "chains": [
@@ -82,15 +62,66 @@
         }
       ]
     },
-    "openCard": {
+    "openTile": {
       "chains": [
         {
           "chain": "goToChain",
           "parameters": {
-            "flow": "{{ $event.detail.context.data.flow }}",
-            "page": "{{ $event.detail.context.data.page }}",
-            "requestId": "{{ $event.detail.context.data.requestId }}"
+            "flow": "{{ $current.data.flow }}",
+            "page": "{{ $current.data.page }}"
           }
+        }
+      ]
+    },
+    "openAttention": {
+      "chains": [
+        {
+          "chain": "goToChain",
+          "parameters": {
+            "flow": "{{ $current.data.flow }}",
+            "page": "{{ $current.data.page }}",
+            "requestId": "{{ $current.data.requestId }}"
+          }
+        }
+      ]
+    },
+    "openRecent": {
+      "chains": [
+        {
+          "chain": "goToChain",
+          "parameters": {
+            "flow": "requests",
+            "requestId": "{{ $current.data.id }}"
+          }
+        }
+      ]
+    },
+    "openRecentWorkflow": {
+      "chains": [
+        {
+          "chain": "goToChain",
+          "parameters": {
+            "flow": "requests",
+            "requestId": "{{ $current.data.id }}",
+            "view": "workflow"
+          }
+        }
+      ]
+    },
+    "askAutopilot": {
+      "chains": [
+        {
+          "chain": "askAutopilotChain",
+          "parameters": {
+            "prompt": "{{ $current.data.prompt }}"
+          }
+        }
+      ]
+    },
+    "openAutopilot": {
+      "chains": [
+        {
+          "chain": "askAutopilotChain"
         }
       ]
     }
@@ -100,11 +131,8 @@
       "oj-sp-welcome-page": {
         "path": "oj-sp/welcome-page/loader"
       },
-      "oj-sp-object-card": {
-        "path": "oj-sp/object-card/loader"
-      },
-      "oj-list-view": {
-        "path": "ojs/ojlistview"
+      "oj-button": {
+        "path": "ojs/ojbutton"
       }
     }
   }

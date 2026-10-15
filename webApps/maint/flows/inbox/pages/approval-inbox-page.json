@@ -135,6 +135,18 @@
           }
         }
       ]
+    },
+    "openWorkflow": {
+      "chains": [
+        {
+          "chain": "goToChain",
+          "parameters": {
+            "flow": "requests",
+            "requestId": "{{ $current.data.id }}",
+            "view": "workflow"
+          }
+        }
+      ]
     }
   },
   "imports": {

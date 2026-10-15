@@ -38,6 +38,9 @@ define([
 
       // Refresh the drawer and the list.
       $page.variables.selected = $application.functions.requestById(id);
+      const workflow = $application.functions.requestWorkflow(id);
+      $page.variables.workflow = workflow;
+      $page.variables.workflowHeadline = $application.functions.workflowHeadline(workflow);
       const all = $application.functions.requestList();
       $page.variables.all = all;
       const v = $page.variables;

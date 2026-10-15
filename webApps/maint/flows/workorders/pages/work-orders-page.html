@@ -46,7 +46,7 @@
                     </div>
                   </oj-bind-if>
                   <div class="mx-actions">
-                    <button type="button" class="mx-link oj-typography-body-sm" on-click="[[$listeners.openRequest]]"><oj-bind-text value="[[ 'From ' + $current.data.requestId ]]"></oj-bind-text></button>
+                    <button type="button" class="mx-link oj-typography-body-sm" on-click="[[$listeners.openRequest]]"><oj-bind-text value="[[ $current.data.requestId + ' workflow' ]]"></oj-bind-text></button>
                     <span class="mx-toolbar-spacer"></span>
                     <oj-bind-if test="[[ $current.data.status === 'Scheduled' ]]">
                       <oj-button chroming="outlined" on-oj-action="[[$listeners.advance]]">Start work</oj-button>

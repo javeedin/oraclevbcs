@@ -11,7 +11,8 @@ define([
 
   /**
    * Loads all requests when the page opens and applies the current filters.
-   * If another page asked to open one request ($application.variables.openRequestId), opens its drawer.
+   * If another page asked to open one request ($application.variables.openRequestId), opens its drawer
+   * on details or on the workflow ($application.variables.openRequestView).
    */
   class loadRequestsChain extends ActionChain {
 
@@ -37,11 +38,17 @@ define([
 
       const openId = $application.variables.openRequestId;
       if (openId) {
+        const view = $application.variables.openRequestView;
         $application.variables.openRequestId = '';
+        $application.variables.openRequestView = '';
         // Sample data. Live version: GET /requests/{id} from ORDS.
         const request = $application.functions.requestById(openId);
         if (request) {
+          const workflow = $application.functions.requestWorkflow(openId);
           $page.variables.selected = request;
+          $page.variables.workflow = workflow;
+          $page.variables.workflowHeadline = $application.functions.workflowHeadline(workflow);
+          $page.variables.detailView = view === 'workflow' ? 'workflow' : 'details';
           $page.variables.detailOpen = true;
         }
       }

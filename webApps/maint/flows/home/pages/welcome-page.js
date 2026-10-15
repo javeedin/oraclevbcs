@@ -23,61 +23,24 @@ define([], () => {
       return line;
     }
 
-    /** The shortcut cards: the main jobs of the module, with live counts. */
-    shortcuts(counts) {
+    /** The compact counters under the banner; each one opens the right place. */
+    tiles(counts, model) {
       const c = counts || {};
+      const m = model || {};
       return [
-        {
-          id: 'send',
-          badge: String(c.drafts || 0),
-          label: 'Requests',
-          title: 'Send for approval',
-          text: `${plural(c.drafts || 0, 'draft is', 'drafts are')} not sent yet`,
-          flow: 'requests',
-          page: 'send-approval',
-          requestId: '',
-        },
-        {
-          id: 'inbox',
-          badge: String(c.pending || 0),
-          label: 'Approvals',
-          title: 'Approval inbox',
-          text: `${plural(c.pending || 0, 'request is', 'requests are')} waiting for a decision`,
-          flow: 'inbox',
-          page: '',
-          requestId: '',
-        },
-        {
-          id: 'workorders',
-          badge: String(c.workOrdersActive || 0),
-          label: 'Work',
-          title: 'Work orders',
-          text: `${plural(c.workOrdersActive || 0, 'work order is', 'work orders are')} scheduled or in progress`,
-          flow: 'workorders',
-          page: '',
-          requestId: '',
-        },
+        { id: 'pending', value: String(c.pending || 0), label: 'Waiting for approval', hint: 'Approval inbox', tone: c.pending ? 'warn' : 'ok', flow: 'inbox', page: '' },
+        { id: 'down', value: String(c.equipmentDown || 0), label: 'Equipment down', hint: 'Equipment', tone: c.equipmentDown ? 'danger' : 'ok', flow: 'equipment', page: '' },
+        { id: 'drafts', value: String(c.drafts || 0), label: 'Drafts not sent', hint: 'Send for approval', tone: c.drafts ? 'info' : 'ok', flow: 'requests', page: 'send-approval' },
+        { id: 'wo', value: String(c.workOrdersActive || 0), label: 'Active work orders', hint: 'Work orders', tone: 'ok', flow: 'workorders', page: '' },
+        { id: 'pm', value: String(m.pmDue || 0), label: 'PM due in 7 days', hint: m.pmOverdue ? `${m.pmOverdue} overdue` : 'Dashboard', tone: m.pmOverdue ? 'warn' : 'ok', flow: 'dashboard', page: '' },
       ];
     }
 
-    /** Recent requests as cards that open the request on the Requests page. */
-    requestCards(requests) {
-      return (requests || []).map((r) => ({
-        id: r.id,
-        badge: r.status,
-        label: `${r.id} · ${r.priority}`,
-        title: r.title,
-        text: r.equipmentName,
-        flow: 'requests',
-        page: '',
-        requestId: r.id,
-      }));
-    }
-
-    /** Attention items from the store, in the card shape. */
-    attentionCards(items) {
-      return (items || []).map((a) => ({
+    /** Attention items from the store, at most six. */
+    attentionRows(items) {
+      return (items || []).slice(0, 6).map((a) => ({
         id: a.id,
+        tone: a.tone,
         badge: a.badge,
         label: a.label,
         title: a.title,

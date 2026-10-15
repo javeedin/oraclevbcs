@@ -620,6 +620,749 @@ define(['oj-sp/spectra-shell/config/config'], () => {
     return n > 1 ? `in ${n} days` : `${-n} days ago`;
   }
 
+  function fmtStamp(value) {
+    const d = parse(value);
+    return d ? `${d.getDate()} ${MONTHS[d.getMonth()]}, ${pad(d.getHours())}:${pad(d.getMinutes())}` : '';
+  }
+
+  function fmtAed(value) {
+    return `AED ${(Number(value) || 0).toLocaleString('en-US', { maximumFractionDigits: 0 })}`;
+  }
+
+  /* --------------------------------------------------------------------
+   * Workflow view: the life of one request as a flow of steps
+   *   raised > sent > supervisor > plant manager > HSE officer > work order > work > completed
+   * Approver steps the rules don't require are shown as skipped, with the reason.
+   * ------------------------------------------------------------------ */
+
+  const FLOW_STATE_LABEL = {
+    done: 'Done',
+    current: 'In progress',
+    pending: 'Not started',
+    rejected: 'Rejected',
+    skipped: 'Not needed',
+    cancelled: 'Cancelled',
+  };
+
+  function skipReason(roleId, req) {
+    if (roleId === 'manager') {
+      return `${req.priority} priority and ${fmtAed(req.estCost)}: the plant manager only approves Critical requests or AED ${COST_THRESHOLD.toLocaleString('en-US')} and above`;
+    }
+    if (roleId === 'hse') {
+      return `${req.type} request: the HSE officer only approves Safety requests`;
+    }
+    return '';
+  }
+
+  function historyAt(req, pattern) {
+    const h = (req.history || []).find((x) => pattern.test(x.text));
+    return h ? h.at : '';
+  }
+
+  function buildWorkflow(req) {
+    const nodes = [];
+    const add = (node) =>
+      nodes.push(
+        Object.assign({ kind: 'step', sub: '', when: '', comment: '', branch: '' }, node, {
+          whenText: fmtStamp(node.when),
+          stateLabel: FLOW_STATE_LABEL[node.state],
+          index: nodes.length,
+        }),
+      );
+    const isDraft = req.status === 'Draft';
+    const isRejected = req.status === 'Rejected';
+
+    add({ id: 'raised', kind: 'start', label: 'Request raised', sub: `${req.requestedBy} · ${req.type} · ${req.priority}`, when: req.requestedOn, state: 'done' });
+    add({
+      id: 'sent',
+      label: isDraft ? 'Send for approval' : 'Sent for approval',
+      sub: isDraft ? 'Still a draft: the requester has not sent it yet' : 'Route worked out from priority, type and cost',
+      when: isDraft ? '' : historyAt(req, /^Sent for approval/),
+      state: isDraft ? 'current' : 'done',
+    });
+
+    const steps = req.route && req.route.length ? req.route : buildRoute(req.priority, req.type, req.estCost);
+    ROLES.forEach((role) => {
+      const step = steps.find((s) => s.roleId === role.id);
+      if (!step) {
+        add({ id: role.id, kind: 'skip', label: `${role.role} approval`, sub: skipReason(role.id, req), state: 'skipped', branch: 'Rule: not required' });
+        return;
+      }
+      let state = 'pending';
+      if (step.status === 'Approved') state = 'done';
+      else if (step.status === 'Rejected') state = 'rejected';
+      else if (step.status === 'Waiting') state = 'current';
+      else if (isRejected) state = 'cancelled';
+      add({
+        id: role.id,
+        kind: 'approval',
+        label: `${role.role} approval`,
+        sub: `${step.name} · ${step.reason}`,
+        when: step.decidedOn,
+        state,
+        comment: step.comment || '',
+        branch: `Rule: ${step.reason}`,
+      });
+    });
+
+    if (isRejected) {
+      add({ id: 'closed', kind: 'end', label: 'Rejected and closed', sub: 'The requester can raise a new request', when: historyAt(req, /^Rejected by/), state: 'rejected' });
+      return nodes;
+    }
+
+    const wo = req.workOrderId ? load().workOrders.find((w) => w.id === req.workOrderId) : null;
+    add({
+      id: 'workorder',
+      label: 'Work order created',
+      sub: wo ? `${wo.id} for ${wo.technician}, planned ${fmtDate(wo.scheduledFor)}` : 'Created automatically after the last approval',
+      when: wo ? historyAt(req, /^Work order .* created/) : '',
+      state: wo ? 'done' : 'pending',
+    });
+    let workState = 'pending';
+    if (wo && wo.status === 'Completed') workState = 'done';
+    else if (wo) workState = 'current';
+    add({
+      id: 'work',
+      label: wo && wo.status === 'Scheduled' ? 'Waiting to start work' : 'Work in progress',
+      sub: wo ? (wo.status === 'Scheduled' ? `${wo.technician} starts on ${fmtDate(wo.scheduledFor)}` : `${wo.technician} · ${wo.progress}% done`) : 'The technician starts and completes the work',
+      when: wo ? wo.startedOn : '',
+      state: workState,
+    });
+    add({
+      id: 'completed',
+      kind: 'end',
+      label: 'Completed',
+      sub: 'Request closed and equipment back in service',
+      when: wo ? wo.completedOn : '',
+      state: wo && wo.status === 'Completed' ? 'done' : 'pending',
+    });
+    return nodes;
+  }
+
+  /* --------------------------------------------------------------------
+   * Auto Pilot: an assistant on Claude (Claude Messages API, called from the browser)
+   *
+   * The API key stays in this browser: in localStorage when "Remember" is on, otherwise
+   * only in memory until the page reloads. It is sent only to api.anthropic.com.
+   * For production, call Claude from a server-side proxy (ORDS, OIC or another backend)
+   * so the key never reaches the browser.
+   * ------------------------------------------------------------------ */
+
+  const AP_URL = 'https://api.anthropic.com/v1/messages';
+  const AP_VERSION = '2023-06-01';
+  const AP_STORE_KEY = 'mx-autopilot-settings-v1';
+  const AP_MAX_TOKENS = 2048;
+  const AP_MAX_ROUNDS = 8;
+  const AP_MAX_HISTORY = 40;
+  const AP_MODELS = [
+    { value: 'claude-sonnet-5-5', label: 'Claude Sonnet 5.5 (fast, recommended)' },
+    { value: 'claude-opus-5-5', label: 'Claude Opus 5.5 (most capable)' },
+    { value: 'claude-haiku-5-5', label: 'Claude Haiku 5.5 (fastest, lowest cost)' },
+  ];
+  const AP_DEFAULTS = { apiKey: '', model: 'claude-sonnet-5-5', remember: true, useData: true };
+  const AP_SUGGESTIONS = [
+    'What needs my attention today?',
+    'Which requests are waiting for the plant manager, and for how long?',
+    'Which equipment is down, and is there a request for each one?',
+    'Raise a draft request: chiller CH-02 is very noisy since this morning, high priority.',
+    'Explain the Procure to Pay flow in Oracle Fusion in simple steps.',
+    'How do I call an Oracle Fusion REST API from Visual Builder?',
+  ];
+  let apSessionKey = ''; // the key, when "Remember" is off
+
+  function apRead() {
+    let saved = {};
+    try {
+      saved = JSON.parse(window.localStorage.getItem(AP_STORE_KEY) || '{}') || {};
+    } catch {
+      saved = {};
+    }
+    const s = Object.assign({}, AP_DEFAULTS, saved);
+    if (!s.apiKey && apSessionKey) {
+      s.apiKey = apSessionKey;
+    }
+    if (!AP_MODELS.some((m) => m.value === s.model)) {
+      s.model = AP_DEFAULTS.model;
+    }
+    return s;
+  }
+
+  function apWrite(s) {
+    const remember = s.remember !== false;
+    apSessionKey = remember ? '' : s.apiKey || '';
+    const toSave = { model: s.model, remember, useData: s.useData !== false, apiKey: remember ? s.apiKey || '' : '' };
+    try {
+      window.localStorage.setItem(AP_STORE_KEY, JSON.stringify(toSave));
+    } catch {
+      // Storage blocked: the key still works until the page reloads.
+      apSessionKey = s.apiKey || '';
+    }
+  }
+
+  function apModelLabel(model) {
+    const m = AP_MODELS.find((x) => x.value === model);
+    return m ? m.label.replace(/ \(.*\)$/, '') : model;
+  }
+
+  function apSystemPrompt(useData) {
+    const d = new Date();
+    const days = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
+    const lines = [
+      'You are Auto Pilot, the assistant inside a maintenance management app built with Oracle Visual Builder on Oracle Redwood page templates.',
+      `Today is ${days[d.getDay()]} ${isoDate(d)}. The user is "You" in the data (the person signed in).`,
+      'The app covers: raising maintenance requests against equipment, sending drafts for approval, an approval route, an approval inbox, work orders, equipment health and preventive maintenance (PM).',
+      `Approval rules: the maintenance supervisor approves every request; the plant manager also approves when the priority is Critical or the estimated cost is AED ${COST_THRESHOLD.toLocaleString('en-US')} or more; the HSE officer also approves Safety requests. The last approval creates a work order; completing it closes the request and puts the equipment back in service.`,
+      `Approvers: ${ROLES.map((r) => `${r.role} ${r.name}`).join('; ')}. Sites: Jebel Ali plant, Dubai Industrial City, Abu Dhabi depot. Currency: AED. All data is sample data kept in the browser.`,
+    ];
+    if (useData) {
+      lines.push(
+        'Use the tools to look up the live data before answering questions about requests, equipment, approvals or work orders. Never invent IDs, names, dates or numbers.',
+        'Only call create_draft_request when the user clearly asks you to raise or create a request. It saves a draft; tell the user the ID and that they still send it for approval (Requests > Send for approval).',
+      );
+    } else {
+      lines.push('Access to the maintenance data is turned off in Settings. If asked about requests, equipment or approvals, say so and suggest turning on "Let Auto Pilot read the maintenance data".');
+    }
+    lines.push(
+      'You are also an expert in Oracle: Fusion Cloud Applications (ERP Financials, Procurement, Supply Chain including Maintenance Management, HCM), E-Business Suite, Visual Builder and VB Studio, Redwood, APEX, ORDS, Oracle Integration (OIC), BI Publisher and OTBI, PL/SQL and Oracle Database. Answer general Oracle questions directly and practically, with navigation paths, REST resources or code when useful, and say so when a detail depends on the release.',
+      'Style: concise and practical. Short paragraphs and bullet lists, **bold** for key terms, `code` for names, fenced code blocks for code, a markdown table only to compare several items.',
+    );
+    return lines.join('\n');
+  }
+
+  const AP_TOOLS = [
+    {
+      name: 'get_overview',
+      description: 'The current maintenance picture: KPIs, counts, what needs attention, equipment down, approvals waiting longest, PM due and overdue. Use it first for broad questions such as "what needs my attention".',
+      input_schema: { type: 'object', properties: {} },
+    },
+    {
+      name: 'search_requests',
+      description: 'Find maintenance requests, newest first. Every filter is optional. Returns a short summary per request; use get_request for the full approval route and history.',
+      input_schema: {
+        type: 'object',
+        properties: {
+          status: { type: 'string', enum: ['Open', ...STATUSES], description: 'Open means Pending approval, Approved or In progress.' },
+          priority: { type: 'string', enum: PRIORITIES },
+          type: { type: 'string', enum: TYPES },
+          text: { type: 'string', description: 'Words to match in the ID, title, description, equipment, location or requester.' },
+          equipment_id: { type: 'string', description: 'Equipment ID such as EQ-1005.' },
+          raised_by_me: { type: 'boolean' },
+          limit: { type: 'integer', minimum: 1, maximum: 40 },
+        },
+      },
+    },
+    {
+      name: 'get_request',
+      description: 'Everything about one request: description, cost, approval route with each step, history and work order.',
+      input_schema: { type: 'object', properties: { id: { type: 'string', description: 'Request ID such as MR-24131.' } }, required: ['id'] },
+    },
+    {
+      name: 'search_equipment',
+      description: 'Find equipment (assets) with status, health, next preventive maintenance and open requests. Every filter is optional.',
+      input_schema: {
+        type: 'object',
+        properties: {
+          text: { type: 'string', description: 'Words to match in the ID, name, maker, model or location.' },
+          category: { type: 'string', enum: Object.keys(CATEGORIES) },
+          status: { type: 'string', enum: ['Running', 'Maintenance', 'Down'] },
+          pm: { type: 'string', enum: ['overdue', 'due_in_7_days'], description: 'Preventive maintenance filter.' },
+        },
+      },
+    },
+    {
+      name: 'get_equipment',
+      description: 'One asset with its specs and full maintenance request history.',
+      input_schema: { type: 'object', properties: { id: { type: 'string', description: 'Equipment ID such as EQ-1005.' } }, required: ['id'] },
+    },
+    {
+      name: 'get_approval_inbox',
+      description: 'Requests waiting for an approver role, most urgent first.',
+      input_schema: {
+        type: 'object',
+        properties: { role: { type: 'string', enum: ROLES.map((r) => r.id), description: 'supervisor = Maintenance supervisor, manager = Plant manager, hse = HSE officer.' } },
+        required: ['role'],
+      },
+    },
+    {
+      name: 'list_work_orders',
+      description: 'Work orders with status, technician, dates and progress.',
+      input_schema: {
+        type: 'object',
+        properties: {
+          status: { type: 'string', enum: ['Scheduled', 'In progress', 'Completed'] },
+          text: { type: 'string', description: 'Words to match in the work order, request, equipment or technician.' },
+        },
+      },
+    },
+    {
+      name: 'preview_approval_route',
+      description: 'Who would have to approve a request with this priority, type and estimated cost.',
+      input_schema: {
+        type: 'object',
+        properties: {
+          priority: { type: 'string', enum: PRIORITIES },
+          type: { type: 'string', enum: TYPES },
+          est_cost: { type: 'number', description: 'Estimated cost in AED.' },
+        },
+        required: ['priority', 'type'],
+      },
+    },
+    {
+      name: 'create_draft_request',
+      description: 'Save a new maintenance request as a DRAFT (it is not sent for approval). Only use it when the user explicitly asks to raise or create a request. Look up the exact equipment_id with search_equipment first.',
+      input_schema: {
+        type: 'object',
+        properties: {
+          equipment_id: { type: 'string' },
+          title: { type: 'string', description: 'Short title, at most 80 characters.' },
+          description: { type: 'string', description: 'What was observed.' },
+          type: { type: 'string', enum: TYPES },
+          priority: { type: 'string', enum: PRIORITIES },
+          needed_by: { type: 'string', description: 'Date as YYYY-MM-DD, optional.' },
+          est_cost: { type: 'number', description: 'Estimated cost in AED, optional.' },
+        },
+        required: ['equipment_id', 'title', 'description', 'type', 'priority'],
+      },
+    },
+  ];
+
+  function apRequestSummary(r) {
+    return {
+      id: r.id,
+      title: r.title,
+      status: r.status,
+      priority: r.priority,
+      type: r.type,
+      equipment: `${r.equipmentName} (${r.equipmentId})`,
+      location: r.location,
+      raisedBy: r.requestedBy,
+      raisedOn: r.requestedOn,
+      neededBy: r.neededBy || undefined,
+      estCostAed: r.estCost,
+      waitingFor: r.waitingFor || undefined,
+      workOrder: r.workOrderId || undefined,
+    };
+  }
+
+  function apEquipmentSummary(e) {
+    return {
+      id: e.id,
+      name: e.name,
+      category: e.category,
+      location: e.location,
+      status: e.status,
+      healthPct: e.health,
+      criticality: e.criticality,
+      nextPm: e.nextPm,
+      pm: e.pmState,
+      openRequests: e.openRequests,
+    };
+  }
+
+  function apMatches(values, text) {
+    const q = String(text || '').trim().toLowerCase();
+    if (!q) {
+      return true;
+    }
+    const hay = values.join(' ').toLowerCase();
+    return q.split(/\s+/).every((w) => hay.includes(w));
+  }
+
+  // Runs one tool against the store. `app` is an AppModule instance (its methods are stateless).
+  function apRunTool(app, name, input) {
+    const i = input || {};
+    switch (name) {
+      case 'get_overview': {
+        const d = app.dashboard();
+        return {
+          kpis: d.kpis.map((k) => ({ kpi: k.label, value: k.value, detail: k.sub })),
+          needsAttention: d.attention.map((a) => `${a.badge}: ${a.title} (${a.text})`),
+          equipmentDown: d.downList,
+          waitingLongest: d.waitingLongest,
+          pmDueNext14Days: d.upcomingPm.map((p) => `${p.name} (${p.id}) ${p.when}`),
+          pmOverdue: d.overduePm.map((p) => `${p.name} (${p.id}) ${p.when}`),
+          counts: app.counts(),
+        };
+      }
+      case 'search_requests': {
+        const open = ['Pending approval', 'Approved', 'In progress'];
+        const found = listRequests().filter((r) => {
+          if (i.status === 'Open' ? !open.includes(r.status) : i.status && r.status !== i.status) return false;
+          if (i.priority && r.priority !== i.priority) return false;
+          if (i.type && r.type !== i.type) return false;
+          if (i.equipment_id && r.equipmentId !== String(i.equipment_id).toUpperCase()) return false;
+          if (i.raised_by_me && r.requestedBy !== ME) return false;
+          return apMatches([r.id, r.title, r.description, r.equipmentName, r.equipmentId, r.location, r.requestedBy], i.text);
+        });
+        const limit = Math.min(Math.max(Number(i.limit) || 15, 1), 40);
+        return { total: found.length, shown: Math.min(limit, found.length), requests: found.slice(0, limit).map(apRequestSummary) };
+      }
+      case 'get_request': {
+        const r = app.requestById(String(i.id || '').trim().toUpperCase());
+        if (!r) {
+          return { error: `There is no request ${i.id}. Use search_requests to find the right ID.` };
+        }
+        return Object.assign(apRequestSummary(r), {
+          description: r.description,
+          equipmentDown: r.downtime,
+          approvalRoute: r.route.map((s) => ({
+            step: s.level,
+            role: s.role,
+            approver: s.name,
+            why: s.reason,
+            status: s.status,
+            decidedOn: s.decidedOn || undefined,
+            comment: s.comment || undefined,
+          })),
+          history: r.history.map((h) => `${h.at} ${h.text}`),
+        });
+      }
+      case 'search_equipment': {
+        const found = app.equipmentList().filter((e) => {
+          if (i.category && e.category !== i.category) return false;
+          if (i.status && e.status !== i.status) return false;
+          if (i.pm === 'overdue' && e.pmState !== 'overdue') return false;
+          if (i.pm === 'due_in_7_days' && e.pmState !== 'due') return false;
+          return apMatches([e.id, e.name, e.manufacturer, e.model, e.location, e.category], i.text);
+        });
+        return { total: found.length, equipment: found.map(apEquipmentSummary) };
+      }
+      case 'get_equipment': {
+        const e = app.equipmentById(String(i.id || '').trim().toUpperCase());
+        if (!e) {
+          return { error: `There is no equipment ${i.id}. Use search_equipment to find the right ID.` };
+        }
+        return Object.assign(apEquipmentSummary(e), {
+          manufacturer: e.manufacturer,
+          model: e.model,
+          serial: e.serial,
+          installed: e.installed,
+          lastService: e.lastService,
+          meterHours: e.meterHours,
+          requests: app.equipmentRequests(e.id).map((r) => `${r.id} ${r.status}: ${r.title} (${r.requestedOn.slice(0, 10)})`),
+        });
+      }
+      case 'get_approval_inbox': {
+        const role = roleById(i.role);
+        if (!role) {
+          return { error: 'role must be supervisor, manager or hse.' };
+        }
+        const items = app.inbox(role.id);
+        return { role: role.role, approver: role.name, total: items.length, requests: items.map(apRequestSummary) };
+      }
+      case 'list_work_orders': {
+        const found = app.workOrderList().filter((w) => (!i.status || w.status === i.status) && apMatches([w.id, w.requestId, w.title, w.equipmentName, w.technician, w.location], i.text));
+        return {
+          total: found.length,
+          workOrders: found.slice(0, 30).map((w) => ({
+            id: w.id,
+            request: w.requestId,
+            title: w.title,
+            equipment: w.equipmentName,
+            status: w.status,
+            technician: w.technician,
+            scheduledFor: w.scheduledFor,
+            startedOn: w.startedOn || undefined,
+            completedOn: w.completedOn || undefined,
+            progressPct: w.progress,
+          })),
+        };
+      }
+      case 'preview_approval_route':
+        return { steps: buildRoute(i.priority, i.type, i.est_cost).map((s) => `${s.level}. ${s.role} (${s.name}): ${s.reason}`) };
+      case 'create_draft_request': {
+        const eq = findEquipment(String(i.equipment_id || '').trim().toUpperCase());
+        if (!eq) {
+          return { error: `There is no equipment ${i.equipment_id}. Use search_equipment to find the right ID.` };
+        }
+        if (!String(i.title || '').trim() || !String(i.description || '').trim()) {
+          return { error: 'title and description are required.' };
+        }
+        const neededBy = /^\d{4}-\d{2}-\d{2}$/.test(String(i.needed_by || '')) ? i.needed_by : '';
+        const req = app.createRequest(
+          {
+            equipmentId: eq.id,
+            title: String(i.title).trim().slice(0, 80),
+            description: String(i.description).trim(),
+            type: TYPES.includes(i.type) ? i.type : 'Corrective',
+            priority: PRIORITIES.includes(i.priority) ? i.priority : 'Medium',
+            neededBy,
+            estCost: Number(i.est_cost) || 0,
+            downtime: false,
+          },
+          false,
+        );
+        return {
+          created: req.id,
+          status: req.status,
+          equipment: `${req.equipmentName} (${req.equipmentId})`,
+          approvalRouteWhenSent: buildRoute(req.priority, req.type, req.estCost).map((s) => s.role),
+          note: 'Saved as a draft. The user sends it from Requests > Send for approval.',
+        };
+      }
+      default:
+        return { error: `Unknown tool ${name}.` };
+    }
+  }
+
+  function apToolSummary(name, input, out) {
+    const i = input || {};
+    if (!out || out.error) {
+      return `${name.replace(/_/g, ' ')}: not found`;
+    }
+    switch (name) {
+      case 'get_overview': return 'Read the overview';
+      case 'search_requests': return `Searched requests (${out.total})`;
+      case 'get_request': return `Opened ${String(i.id).toUpperCase()}`;
+      case 'search_equipment': return `Searched equipment (${out.total})`;
+      case 'get_equipment': return `Opened ${String(i.id).toUpperCase()}`;
+      case 'get_approval_inbox': return `Checked the ${roleText(out.role)} inbox (${out.total})`;
+      case 'list_work_orders': return `Listed work orders (${out.total})`;
+      case 'preview_approval_route': return 'Worked out the approval route';
+      case 'create_draft_request': return `Created draft ${out.created}`;
+      default: return name;
+    }
+  }
+
+  // Keeps the conversation short enough: drops the oldest turns, always restarting at a plain user question.
+  function apTrim(messages) {
+    const list = messages.slice();
+    while (list.length > AP_MAX_HISTORY) {
+      list.shift();
+      while (list.length && !(list[0].role === 'user' && typeof list[0].content === 'string')) {
+        list.shift();
+      }
+    }
+    return list;
+  }
+
+  async function apCall(apiKey, body) {
+    const controller = typeof AbortController === 'function' ? new AbortController() : null;
+    const timer = controller ? setTimeout(() => controller.abort(), 120000) : null;
+    let response;
+    try {
+      response = await window.fetch(AP_URL, {
+        method: 'POST',
+        headers: {
+          'content-type': 'application/json',
+          'x-api-key': apiKey,
+          'anthropic-version': AP_VERSION,
+          'anthropic-dangerous-direct-browser-access': 'true',
+        },
+        body: JSON.stringify(body),
+        signal: controller ? controller.signal : undefined,
+      });
+    } catch (e) {
+      throw new Error(
+        e && e.name === 'AbortError'
+          ? 'Claude took more than 2 minutes to answer. Try again, or pick a faster model in Settings.'
+          : 'Could not reach api.anthropic.com from this browser. Check the internet connection, and whether a proxy, firewall or the page security policy blocks it.',
+      );
+    } finally {
+      if (timer) {
+        clearTimeout(timer);
+      }
+    }
+    let data = null;
+    try {
+      data = await response.json();
+    } catch {
+      data = null;
+    }
+    if (!response.ok) {
+      const detail = data && data.error && data.error.message ? data.error.message : `HTTP ${response.status}`;
+      const hint = {
+        400: 'Claude could not process the request.',
+        401: 'The API key was rejected. Check it in Settings.',
+        403: 'This API key is not allowed to do that.',
+        404: 'That model is not available to this key. Pick another model in Settings.',
+        413: 'The conversation is too long. Start a new chat.',
+        429: 'Rate or spend limit reached. Wait a moment and try again.',
+        529: 'Claude is busy right now. Try again in a minute.',
+      }[response.status] || 'The Claude API returned an error.';
+      throw new Error(`${hint} (${response.status}: ${detail})`);
+    }
+    return data || {};
+  }
+
+  async function apAsk(app, history, text) {
+    const settings = apRead();
+    if (!settings.apiKey) {
+      throw new Error('Add your Claude API key in Auto Pilot settings first.');
+    }
+    const messages = apTrim(Array.isArray(history) ? history : []);
+    messages.push({ role: 'user', content: String(text) });
+    const used = [];
+    const usage = { input: 0, output: 0 };
+    let changed = false;
+    let answer = '';
+    let note = '';
+
+    for (let round = 1; round <= AP_MAX_ROUNDS; round++) {
+      const body = { model: settings.model, max_tokens: AP_MAX_TOKENS, system: apSystemPrompt(settings.useData), messages };
+      if (settings.useData) {
+        body.tools = AP_TOOLS;
+      }
+      const data = await apCall(settings.apiKey, body);
+      usage.input += (data.usage && data.usage.input_tokens) || 0;
+      usage.output += (data.usage && data.usage.output_tokens) || 0;
+      const content = Array.isArray(data.content) ? data.content : [];
+      const text = content.filter((b) => b.type === 'text').map((b) => b.text).join('\n\n').trim();
+      if (text) {
+        answer = text;
+      }
+      if (data.stop_reason !== 'tool_use') {
+        messages.push({ role: 'assistant', content });
+        if (data.stop_reason === 'max_tokens') note = 'The answer was cut off at the length limit. Ask me to continue.';
+        if (data.stop_reason === 'refusal') note = 'Claude declined to answer this one.';
+        break;
+      }
+      if (round === AP_MAX_ROUNDS) {
+        // Don't keep an unanswered tool call in the history: the next question would fail.
+        note = 'I stopped after several lookups. Try a narrower question.';
+        break;
+      }
+      messages.push({ role: 'assistant', content });
+      const results = content
+        .filter((b) => b.type === 'tool_use')
+        .map((b) => {
+          let out;
+          try {
+            out = apRunTool(app, b.name, b.input);
+          } catch (e) {
+            out = { error: e && e.message ? e.message : String(e) };
+          }
+          if (b.name === 'create_draft_request' && out && out.created) {
+            changed = true;
+          }
+          used.push({ id: `t${used.length}`, summary: apToolSummary(b.name, b.input, out) });
+          const result = { type: 'tool_result', tool_use_id: b.id, content: JSON.stringify(out) };
+          if (out && out.error) {
+            result.is_error = true;
+          }
+          return result;
+        });
+      messages.push({ role: 'user', content: results });
+    }
+
+    return {
+      history: messages,
+      text: [answer || 'No answer text came back.', note ? `_${note}_` : ''].filter(Boolean).join('\n\n'),
+      tools: used,
+      changed,
+      model: settings.model,
+      modelLabel: apModelLabel(settings.model),
+      usage,
+    };
+  }
+
+  /* ---------- Markdown answer > blocks the page can render safely (no innerHTML) ---------- */
+
+  function apPlain(text) {
+    return String(text || '')
+      .replace(/\[([^\]]+)\]\(([^)]+)\)/g, '$1 ($2)')
+      .replace(/\*\*([^*]+)\*\*/g, '$1')
+      .replace(/`([^`]+)`/g, '$1');
+  }
+
+  function apInline(text) {
+    const source = String(text || '').replace(/\[([^\]]+)\]\(([^)]+)\)/g, '$1 ($2)');
+    const segments = [];
+    const re = /(\*\*[^*]+\*\*|`[^`]+`)/g;
+    let last = 0;
+    let m = re.exec(source);
+    while (m) {
+      if (m.index > last) {
+        segments.push({ id: `s${segments.length}`, text: source.slice(last, m.index), cls: '' });
+      }
+      const token = m[0];
+      segments.push(
+        token.startsWith('**')
+          ? { id: `s${segments.length}`, text: token.slice(2, -2), cls: 'mx-ap-b' }
+          : { id: `s${segments.length}`, text: token.slice(1, -1), cls: 'mx-ap-code' },
+      );
+      last = m.index + token.length;
+      m = re.exec(source);
+    }
+    if (last < source.length) {
+      segments.push({ id: `s${segments.length}`, text: source.slice(last), cls: '' });
+    }
+    return segments;
+  }
+
+  function apBlocks(markdown) {
+    const lines = String(markdown || '').replace(/\r\n/g, '\n').split('\n');
+    const blocks = [];
+    let para = [];
+    const block = (type, extra) =>
+      blocks.push(Object.assign({ id: `b${blocks.length}`, type, segments: [], text: '', rows: [], marker: '', indent: false }, extra));
+    const flush = () => {
+      if (para.length) {
+        block('p', { segments: apInline(para.join(' ')) });
+        para = [];
+      }
+    };
+    let i = 0;
+    while (i < lines.length) {
+      const line = lines[i];
+      const t = line.trim();
+      if (t.startsWith('```')) {
+        flush();
+        const code = [];
+        i += 1;
+        while (i < lines.length && !lines[i].trim().startsWith('```')) {
+          code.push(lines[i]);
+          i += 1;
+        }
+        i += 1;
+        block('code', { text: code.join('\n') });
+        continue;
+      }
+      if (!t || /^(-{3,}|\*{3,}|_{3,})$/.test(t)) {
+        flush();
+        i += 1;
+        continue;
+      }
+      const heading = t.match(/^#{1,6}\s+(.*)$/);
+      if (heading) {
+        flush();
+        block('h', { segments: apInline(heading[1]) });
+        i += 1;
+        continue;
+      }
+      if (t.startsWith('|')) {
+        flush();
+        const rows = [];
+        while (i < lines.length && lines[i].trim().startsWith('|')) {
+          const r = lines[i].trim();
+          if (!/^\|[\s:|-]+\|?$/.test(r)) {
+            const cells = r.replace(/^\|/, '').replace(/\|$/, '').split('|');
+            rows.push({ id: `r${rows.length}`, head: rows.length === 0, cells: cells.map((c, ci) => ({ id: `c${ci}`, text: apPlain(c.trim()) })) });
+          }
+          i += 1;
+        }
+        block('table', { rows });
+        continue;
+      }
+      const bullet = t.match(/^[-*•]\s+(.*)$/);
+      const numbered = t.match(/^(\d+)[.)]\s+(.*)$/);
+      if (bullet || numbered) {
+        flush();
+        block('li', {
+          marker: bullet ? '•' : `${numbered[1]}.`,
+          segments: apInline(bullet ? bullet[1] : numbered[2]),
+          indent: line.search(/\S/) >= 2,
+        });
+        i += 1;
+        continue;
+      }
+      para.push(t.replace(/^>\s?/, ''));
+      i += 1;
+    }
+    flush();
+    return blocks;
+  }
+
   /* --------------------------------------------------------------------
    * Application module: everything below is $application.functions.*
    * ------------------------------------------------------------------ */
@@ -1128,6 +1871,111 @@ define(['oj-sp/spectra-shell/config/config'], () => {
       state = seed();
       save();
       return true;
+    }
+
+    /* ---------- Workflow view ---------- */
+
+    /**
+     * The flow of one request, step by step, for the workflow diagram.
+     * Each node: id, kind (start|step|approval|skip|end), label, sub, whenText, state
+     * (done|current|pending|rejected|skipped|cancelled), stateLabel, comment, branch.
+     */
+    requestWorkflow(id) {
+      const req = findRequest(id);
+      return req ? buildWorkflow(req) : [];
+    }
+
+    /** One line that says where the request is now. */
+    workflowHeadline(nodes) {
+      const list = nodes || [];
+      const rejected = list.find((n) => n.state === 'rejected');
+      if (rejected) {
+        return `Stopped at: ${rejected.label}`;
+      }
+      const current = list.find((n) => n.state === 'current');
+      if (current) {
+        return `Now: ${current.label}`;
+      }
+      const last = list[list.length - 1];
+      return last && last.state === 'done' ? 'Finished' : 'Not started';
+    }
+
+    /* ---------- Auto Pilot (Claude) ---------- */
+
+    autopilotModels() {
+      return clone(AP_MODELS);
+    }
+
+    autopilotSuggestions() {
+      return AP_SUGGESTIONS.map((prompt, i) => ({ id: `q${i}`, prompt }));
+    }
+
+    /** What the UI may show: never the key itself, only a hint of it. */
+    autopilotSettings() {
+      const s = apRead();
+      return {
+        hasKey: !!s.apiKey,
+        keyHint: s.apiKey ? `${s.apiKey.slice(0, 7)}…${s.apiKey.slice(-4)}` : '',
+        model: s.model,
+        modelLabel: apModelLabel(s.model),
+        remember: s.remember !== false,
+        useData: s.useData !== false,
+      };
+    }
+
+    /** Values for the settings dialog. The key field starts empty: leave it empty to keep the saved key. */
+    autopilotForm() {
+      const s = apRead();
+      return { apiKey: '', model: s.model, remember: s.remember !== false, useData: s.useData !== false };
+    }
+
+    saveAutopilotSettings(form) {
+      const current = apRead();
+      const f = form || {};
+      const typed = String(f.apiKey || '').trim();
+      apWrite({
+        apiKey: typed || current.apiKey,
+        model: AP_MODELS.some((m) => m.value === f.model) ? f.model : current.model,
+        remember: f.remember !== false,
+        useData: f.useData !== false,
+      });
+    }
+
+    removeAutopilotKey() {
+      const current = apRead();
+      apWrite(Object.assign({}, current, { apiKey: '' }));
+      apSessionKey = '';
+    }
+
+    /** Sends a tiny request to check the key and model. Uses the typed key when there is one. */
+    async testAutopilot(form) {
+      const current = apRead();
+      const f = form || {};
+      const key = String(f.apiKey || '').trim() || current.apiKey;
+      const model = AP_MODELS.some((m) => m.value === f.model) ? f.model : current.model;
+      if (!key) {
+        return { ok: false, message: 'Enter your Claude API key first.' };
+      }
+      try {
+        await apCall(key, { model, max_tokens: 16, messages: [{ role: 'user', content: 'Reply with the single word OK.' }] });
+        return { ok: true, message: `Connected. ${apModelLabel(model)} answered.` };
+      } catch (e) {
+        return { ok: false, message: e && e.message ? e.message : String(e) };
+      }
+    }
+
+    /**
+     * Asks Claude. `history` is the API conversation so far (kept by the shell page).
+     * Returns { history, blocks, tools, changed, modelLabel, usage }; throws with a readable message.
+     */
+    async askAutopilot(history, text) {
+      const result = await apAsk(new AppModule(), history, text);
+      return Object.assign(result, { blocks: apBlocks(result.text) });
+    }
+
+    /** Markdown text to blocks for display (also used for notes and errors). */
+    autopilotBlocks(text) {
+      return apBlocks(text);
     }
 
     /* ---------- Messages (shell toasts) ---------- */

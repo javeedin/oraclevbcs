@@ -9,15 +9,20 @@ runtime; there is no bundler and no JSX.
 ```
 visual-application.json            VB 25.10 runtime, JET 18.1.4 - do not hand-edit versions
 settings/dependencies.json         oj-sp components available to the app (as in Oracle's Redwood starter)
-package.json, Gruntfile.js         grunt-vb-build 2510 tooling (build/serve/serve:cdn/audit/package). Node 20.
+package.json, Gruntfile.js         grunt-vb-build 2510 tooling. Node 20. `npm run build`/`serve` build a copy in
+                                   .local-src/ without component-dependencies (no Component Exchange locally).
 webApps/maint/
   index.html                       VB entry page
   app-flow.json                    requirejs paths/bundles for oj-sp on Oracle's CDN, app variables
-                                   (counts, messages, prefillEquipmentId, openRequestId), CSS import
-  app-flow.js                      define(['oj-sp/spectra-shell/config/config']) + sample data store
+                                   (counts, messages, prefillEquipmentId, openRequestId, openRequestView,
+                                   autopilotOpen, autopilotQueued), CSS import
+  app-flow.js                      define(['oj-sp/spectra-shell/config/config']) + sample data store,
+                                   workflow builder (requestWorkflow) and Auto Pilot (Claude API + tools)
   settings/dependencies.json       oj-sp components this web app uses (must list every oj-sp-* tag)
-  pages/shell-page.*               oj-sp-pillar-theme, header, oj-sp-in-app-navigation, toasts, router
-  pages/shell-page-chains/         initShell, navigate, resetDemo
+  pages/shell-page.*               oj-sp-pillar-theme, header, oj-sp-in-app-navigation, toasts, router,
+                                   Auto Pilot panel (oj-drawer-popup, modeless) and its settings dialog
+  pages/shell-page-chains/         initShell, navigate, resetDemo, toggleAutopilot, autopilotSend,
+                                   autopilotSettings, newChat
   flows/<flow>/<flow>-flow.json    one flow per navigation item
   flows/<flow>/pages/<page>-page.{json,html,js} and <page>-page-chains/
   resources/css/app.css            layout inside the templates only: mx- prefix, --oj-core-* variables
@@ -25,14 +30,16 @@ webApps/maint/
 
 | Navigation item | Flow | Pages (default first) | Redwood template |
 |---|---|---|---|
-| Home | home | welcome | oj-sp-welcome-page + oj-sp-object-card |
-| Dashboard | dashboard | overview | oj-sp-dashboard-landing-page + scoreboard / dashboard-grid / dashboard-panel |
+| Home | home | welcome | oj-sp-welcome-page + compact counters and lists |
+| Dashboard | dashboard | overview | oj-sp-dashboard-landing-page + oj-sp-scoreboard + compact panels |
 | Requests | requests | my-requests, raise-request, send-approval | smart-search-page; simple-create-edit for the other two |
-| Equipment | equipment | browse-equipment | oj-sp-smart-search-page + oj-sp-object-card |
+| Equipment | equipment | browse-equipment | oj-sp-smart-search-page + compact cards / oj-table |
 | Approvals | inbox | approval-inbox | oj-sp-smart-search-page |
 | Work orders | workorders | work-orders | oj-sp-smart-search-page |
 
-Detail drawers are `oj-drawer-popup` with `oj-sp-general-drawer-template` inside.
+Detail drawers are `oj-drawer-popup` with `oj-sp-general-drawer-template` inside. The request drawer has
+Details and Workflow views (`detailView`); the workflow nodes come from `requestWorkflow(id)`.
+User feedback: keep Home and Dashboard compact (no big cards, small charts ~12rem).
 
 ## Rules
 
@@ -51,7 +58,9 @@ Detail drawers are `oj-drawer-popup` with `oj-sp-general-drawer-template` inside
    opens a sibling flow with `{ target: 'parent', flow, page? }` (goToChain) and a page of its own
    flow with `Actions.navigateToPage(context, { page })` (openPageChain). The in-app navigation
    highlights itself from `$page.currentFlow`. To open one request on arrival, set
-   `$application.variables.openRequestId` before navigating to Requests.
+   `$application.variables.openRequestId` (and `openRequestView = 'workflow'`) before navigating to Requests
+   (goToChain takes `requestId` and `view`). To ask Auto Pilot from a page, set
+   `autopilotQueued` and `autopilotOpen`; the shell sends it when the panel opens.
 6. **Binding syntax:** `[[ ]]` one-way, `{{ }}` two-way. Page functions are `$functions.x()` in
    HTML and `$page.functions.x()` in chains; app functions are `$application.functions.x()` in both.
 7. **Every component used in HTML must be imported** in the page JSON `imports.components`.
@@ -62,8 +71,11 @@ Detail drawers are `oj-drawer-popup` with `oj-sp-general-drawer-template` inside
 10. **Styling:** Redwood first (`oj-badge`, `oj-panel`, `oj-typography-*`, `oj-text-color-*`,
     `oj-flex`); `app.css` only for layout, with the `mx-` prefix and `--oj-core-*` variables.
     Status badges come from `badgeClass`, `priorityBadgeClass`, `equipmentBadgeClass` in app-flow.js.
-11. After any change run `npm run build` (or `npm run serve:cdn` if the build asks for the
-    Component Exchange) and fix errors before committing.
+11. **Auto Pilot** calls the Claude Messages API from the browser (`x-api-key`, `anthropic-version: 2023-06-01`,
+    `anthropic-dangerous-direct-browser-access: true`). Tools are defined in `AP_TOOLS` and run in
+    `apRunTool` against the store; only `create_draft_request` writes, and only drafts. Answers render
+    from markdown to blocks (`apBlocks`), never innerHTML. The key lives in localStorage (or memory).
+12. After any change run `npm run build` and fix errors before committing.
 
 ## Data
 

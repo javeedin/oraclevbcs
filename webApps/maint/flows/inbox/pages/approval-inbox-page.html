@@ -76,6 +76,7 @@
           <div class="mx-actions">
             <span class="oj-text-color-secondary"><oj-bind-text value="[[ $current.data.neededBy ? 'Needed by ' + $application.functions.fmtDate($current.data.neededBy) : '' ]]"></oj-bind-text></span>
             <span class="mx-toolbar-spacer"></span>
+            <oj-button chroming="borderless" on-oj-action="[[$listeners.openWorkflow]]">View workflow</oj-button>
             <oj-button chroming="outlined" on-oj-action="[[$listeners.reject]]">Reject</oj-button>
             <oj-button chroming="callToAction" on-oj-action="[[$listeners.approve]]">Approve</oj-button>
           </div>

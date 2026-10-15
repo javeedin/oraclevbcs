@@ -6,12 +6,9 @@
       "type": "object[]",
       "defaultValue": []
     },
-    "cardsADP": {
-      "type": "vb/ArrayDataProvider2",
-      "defaultValue": {
-        "keyAttributes": "id",
-        "itemType": "EquipmentRowType"
-      }
+    "shown": {
+      "type": "object[]",
+      "defaultValue": []
     },
     "tableADP": {
       "type": "vb/ArrayDataProvider2",
@@ -226,7 +223,7 @@
         {
           "chain": "openEquipmentChain",
           "parameters": {
-            "id": "{{ $event.detail.context.key }}"
+            "id": "{{ $current.data.id }}"
           }
         }
       ]
@@ -254,9 +251,6 @@
       "oj-sp-smart-search-page": {
         "path": "oj-sp/smart-search-page/loader"
       },
-      "oj-sp-object-card": {
-        "path": "oj-sp/object-card/loader"
-      },
       "oj-sp-general-drawer-template": {
         "path": "oj-sp/general-drawer-template/loader"
       },
@@ -265,9 +259,6 @@
       },
       "oj-select-single": {
         "path": "ojs/ojselectsingle"
-      },
-      "oj-list-view": {
-        "path": "ojs/ojlistview"
       },
       "oj-button": {
         "path": "ojs/ojbutton"

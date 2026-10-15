@@ -1,7 +1,8 @@
 <!--
   Home: Oracle's Redwood welcome page template (oj-sp-welcome-page).
-  The banner carries the two main actions; the cards below are oj-sp-object-card items in a card list.
-  A welcome page shows either a search field or actions, not both, so this one uses actions.
+  The banner carries the two main actions. Below it: compact counters, what needs attention,
+  the latest requests and Auto Pilot questions. A welcome page shows either search or actions;
+  this one uses actions.
 -->
 <oj-sp-welcome-page
   illustration-foreground="https://static.oracle.com/cdn/fnd/gallery/2207.2.0/images/illust-welcome-banner-fg-02.png"
@@ -16,61 +17,85 @@
   on-sp-primary-action="[[$listeners.welcomePrimaryAction]]"
   on-sp-secondary-action="[[$listeners.welcomeSecondaryAction]]">
 
-  <div class="mx-section">
-    <h2 class="oj-typography-heading-xs mx-section-title">
-      <oj-bind-text value="[[ 'Needs your attention (' + $variables.attentionCount + ')' ]]"></oj-bind-text>
-    </h2>
-    <oj-list-view class="mx-cards" display="card" aria-label="Needs your attention"
-      data="[[ $variables.attentionADP ]]" on-oj-item-action="[[$listeners.openCard]]">
-      <template slot="itemTemplate">
-        <li class="oj-sm-12 oj-md-6 oj-lg-4">
-          <oj-sp-object-card
-            primary-text="[[ $current.data.title ]]"
-            secondary-text="[[ $current.data.text ]]"
-            label="[[ $current.data.label ]]"
-            badge.text="[[ $current.data.badge ]]" badge.status="neutral" badge.style="strong"
-            display-options.horizontal-gauge="off" display-options.circular-gauge="off"
-            emphasized="true"></oj-sp-object-card>
-        </li>
-      </template>
-      <template slot="noData">
-        <p class="oj-text-color-secondary">Nothing needs your attention right now.</p>
-      </template>
-    </oj-list-view>
-  </div>
+  <div class="mx-home">
 
-  <div class="mx-section">
-    <h2 class="oj-typography-heading-xs mx-section-title">Shortcuts</h2>
-    <oj-list-view class="mx-cards" display="card" aria-label="Shortcuts"
-      data="[[ $variables.shortcutsADP ]]" on-oj-item-action="[[$listeners.openCard]]">
-      <template slot="itemTemplate">
-        <li class="oj-sm-12 oj-md-6 oj-lg-4">
-          <oj-sp-object-card
-            primary-text="[[ $current.data.title ]]"
-            secondary-text="[[ $current.data.text ]]"
-            label="[[ $current.data.label ]]"
-            badge.text="[[ $current.data.badge ]]" badge.status="neutral" badge.style="strong"
-            display-options.horizontal-gauge="off" display-options.circular-gauge="off"></oj-sp-object-card>
-        </li>
-      </template>
-    </oj-list-view>
-  </div>
+    <!-- ============ Counters ============ -->
+    <div class="mx-tiles" role="list" aria-label="Key numbers">
+      <oj-bind-for-each data="[[ $variables.tiles ]]">
+        <template>
+          <button type="button" role="listitem" :class="[[ 'mx-tile is-' + $current.data.tone ]]" on-click="[[$listeners.openTile]]">
+            <span class="mx-tile-value"><oj-bind-text value="[[ $current.data.value ]]"></oj-bind-text></span>
+            <span class="mx-tile-label"><oj-bind-text value="[[ $current.data.label ]]"></oj-bind-text></span>
+            <span class="mx-tile-hint"><oj-bind-text value="[[ $current.data.hint ]]"></oj-bind-text></span>
+          </button>
+        </template>
+      </oj-bind-for-each>
+    </div>
 
-  <div class="mx-section">
-    <h2 class="oj-typography-heading-xs mx-section-title">Latest requests</h2>
-    <oj-list-view class="mx-cards" display="card" aria-label="Latest requests"
-      data="[[ $variables.recentADP ]]" on-oj-item-action="[[$listeners.openCard]]">
-      <template slot="itemTemplate">
-        <li class="oj-sm-12 oj-md-6 oj-lg-4">
-          <oj-sp-object-card
-            primary-text="[[ $current.data.title ]]"
-            secondary-text="[[ $current.data.text ]]"
-            label="[[ $current.data.label ]]"
-            badge.text="[[ $current.data.badge ]]" badge.status="neutral" badge.style="strong"
-            display-options.horizontal-gauge="off" display-options.circular-gauge="off"></oj-sp-object-card>
-        </li>
-      </template>
-    </oj-list-view>
-  </div>
+    <div class="mx-home-grid">
 
+      <!-- ============ Needs attention ============ -->
+      <section class="oj-panel mx-panel mx-compact" aria-labelledby="homeAttention">
+        <h2 id="homeAttention" class="oj-typography-subheading-xs mx-compact-title">
+          <oj-bind-text value="[[ 'Needs your attention (' + $variables.attention.length + ')' ]]"></oj-bind-text>
+        </h2>
+        <oj-bind-if test="[[ $variables.attention.length === 0 ]]">
+          <p class="oj-text-color-secondary">Nothing needs your attention right now.</p>
+        </oj-bind-if>
+        <ul class="mx-rows">
+          <oj-bind-for-each data="[[ $variables.attention ]]">
+            <template>
+              <li>
+                <button type="button" class="mx-row-button" on-click="[[$listeners.openAttention]]">
+                  <span :class="[[ 'mx-row-flag is-' + $current.data.tone ]]" aria-hidden="true"></span>
+                  <span class="mx-row-text">
+                    <span class="mx-row-title"><oj-bind-text value="[[ $current.data.title ]]"></oj-bind-text></span>
+                    <span class="mx-row-sub"><oj-bind-text value="[[ $current.data.label + ' · ' + $current.data.text ]]"></oj-bind-text></span>
+                  </span>
+                  <span :class="[[ 'oj-badge oj-badge-subtle ' + ($current.data.tone === 'danger' ? 'oj-badge-danger' : $current.data.tone === 'warn' ? 'oj-badge-warning' : 'oj-badge-info') ]]"><oj-bind-text value="[[ $current.data.badge ]]"></oj-bind-text></span>
+                </button>
+              </li>
+            </template>
+          </oj-bind-for-each>
+        </ul>
+      </section>
+
+      <!-- ============ Latest requests ============ -->
+      <section class="oj-panel mx-panel mx-compact" aria-labelledby="homeRecent">
+        <h2 id="homeRecent" class="oj-typography-subheading-xs mx-compact-title">Latest requests</h2>
+        <ul class="mx-rows">
+          <oj-bind-for-each data="[[ $variables.recent ]]">
+            <template>
+              <li class="mx-row-split">
+                <button type="button" class="mx-row-button" on-click="[[$listeners.openRecent]]">
+                  <span class="mx-row-text">
+                    <span class="mx-row-title"><oj-bind-text value="[[ $current.data.title ]]"></oj-bind-text></span>
+                    <span class="mx-row-sub"><oj-bind-text value="[[ $current.data.id + ' · ' + $current.data.equipmentName ]]"></oj-bind-text></span>
+                  </span>
+                  <span :class="[[ $application.functions.badgeClass($current.data.status) ]]"><oj-bind-text value="[[ $current.data.status ]]"></oj-bind-text></span>
+                </button>
+                <button type="button" class="mx-link mx-link-quiet" on-click="[[$listeners.openRecentWorkflow]]" :aria-label="[[ 'Workflow of ' + $current.data.id ]]">Workflow</button>
+              </li>
+            </template>
+          </oj-bind-for-each>
+        </ul>
+      </section>
+
+      <!-- ============ Auto Pilot ============ -->
+      <section class="oj-panel mx-panel mx-compact" aria-labelledby="homeAsk">
+        <div class="mx-compact-head">
+          <h2 id="homeAsk" class="oj-typography-subheading-xs mx-compact-title">Ask Auto Pilot</h2>
+          <oj-button chroming="borderless" on-oj-action="[[$listeners.openAutopilot]]">Open</oj-button>
+        </div>
+        <p class="oj-text-color-secondary oj-typography-body-sm">Claude answers questions about this module's data and about Oracle in general.</p>
+        <div class="mx-chips">
+          <oj-bind-for-each data="[[ $variables.askChips ]]">
+            <template>
+              <button type="button" class="mx-chip" on-click="[[$listeners.askAutopilot]]"><oj-bind-text value="[[ $current.data.prompt ]]"></oj-bind-text></button>
+            </template>
+          </oj-bind-for-each>
+        </div>
+      </section>
+    </div>
+  </div>
 </oj-sp-welcome-page>

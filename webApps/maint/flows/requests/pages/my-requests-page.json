@@ -55,6 +55,18 @@
       "type": "boolean",
       "defaultValue": false
     },
+    "detailView": {
+      "type": "string",
+      "defaultValue": "details"
+    },
+    "workflow": {
+      "type": "object[]",
+      "defaultValue": []
+    },
+    "workflowHeadline": {
+      "type": "string",
+      "defaultValue": ""
+    },
     "columns": {
       "type": "object[]",
       "defaultValue": [
@@ -214,6 +226,17 @@
           "chain": "goToChain",
           "parameters": {
             "flow": "workorders"
+          }
+        }
+      ]
+    },
+    "openWorkflow": {
+      "chains": [
+        {
+          "chain": "openRequestChain",
+          "parameters": {
+            "id": "{{ $current.row.id }}",
+            "view": "workflow"
           }
         }
       ]

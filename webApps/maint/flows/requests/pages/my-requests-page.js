@@ -56,6 +56,25 @@ define([], () => {
       }));
     }
 
+    /** Text in the circle of a workflow step. */
+    flowMark(node) {
+      if (!node) {
+        return '';
+      }
+      return { done: '✓', rejected: '✕', skipped: '↷', cancelled: '–' }[node.state] || String(node.index + 1);
+    }
+
+    /** Redwood badge classes for a workflow step state. */
+    flowBadge(state) {
+      return (
+        {
+          done: 'oj-badge oj-badge-subtle oj-badge-success',
+          current: 'oj-badge oj-badge-warning',
+          rejected: 'oj-badge oj-badge-danger',
+        }[state] || 'oj-badge oj-badge-subtle'
+      );
+    }
+
     /** One line under an approval step. */
     stepLine(step) {
       if (!step) {
