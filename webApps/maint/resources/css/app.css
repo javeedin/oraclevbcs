@@ -1273,7 +1273,9 @@ dd.is-due {
 .mx-cat-dot.is-handling { background: #5e4596; }
 .mx-cat-dot.is-fleet { background: var(--mx-ok); }
 
+/* The table grows with its rows (no oj-table-stretch: that class needs a height set from outside). */
 .mx-table {
+  display: block;
   width: 100%;
 }
 

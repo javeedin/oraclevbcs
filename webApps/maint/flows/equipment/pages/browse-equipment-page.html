@@ -98,7 +98,8 @@
   <!-- ============ Table view ============ -->
   <oj-bind-if test="[[ $variables.view === 'table' ]]">
     <section class="mx-card mx-card--flush">
-      <oj-table class="mx-table oj-table-stretch"
+      <oj-table class="mx-table"
+        scroll-policy="loadAll"
         data="[[ $variables.tableADP ]]"
         columns="[[ $variables.columns ]]"
         display="list"

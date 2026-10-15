@@ -36,7 +36,8 @@
   <p class="mx-result-line"><oj-bind-text value="[[ 'Showing ' + $variables.shownCount + ' ' + $application.functions.plural($variables.shownCount, 'request', 'requests') ]]"></oj-bind-text></p>
 
   <section class="mx-card mx-card--flush">
-    <oj-table class="mx-table oj-table-stretch"
+    <oj-table class="mx-table"
+      scroll-policy="loadAll"
       data="[[ $variables.requestsADP ]]"
       columns="[[ $variables.columns ]]"
       display="list"
