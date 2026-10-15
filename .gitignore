@@ -1,0 +1,7 @@
+node_modules/
+build/
+*.log
+.DS_Store
+.env
+# Keep REST Client secrets out of Git
+api-tests/*.local.http
