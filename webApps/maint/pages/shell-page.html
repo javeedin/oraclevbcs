@@ -30,9 +30,8 @@
           </oj-button>
         </oj-bind-if>
         <oj-button chroming="borderless" on-oj-action="[[$listeners.bellClick]]"
-          :title="[[ $variables.pendingCount + ' ' + $application.functions.plural($variables.pendingCount, 'request is', 'requests are') + ' waiting for approval' ]]">
-          <oj-bind-text value="[[ 'Approvals (' + $variables.pendingCount + ')' ]]"></oj-bind-text>
-        </oj-button>
+          :title="[[ $variables.pendingCount + ' ' + $application.functions.plural($variables.pendingCount, 'request is', 'requests are') + ' waiting for approval' ]]"
+          label="[[ 'Approvals (' + $variables.pendingCount + ')' ]]"></oj-button>
         <oj-button chroming="borderless" on-oj-action="[[$listeners.resetDemo]]" title="Put the sample data back to how it started">Reset sample data</oj-button>
         <oj-button chroming="borderless" on-oj-action="[[$listeners.openSettings]]" title="Auto Pilot settings: Claude API key and model">Settings</oj-button>
         <oj-button chroming="callToAction" on-oj-action="[[$listeners.openAutopilot]]" title="Ask Claude about this module or about Oracle">Auto Pilot</oj-button>
@@ -220,9 +219,8 @@
       <oj-bind-if test="[[ $variables.apSettings.hasKey ]]">
         <oj-button chroming="borderless" on-oj-action="[[$listeners.removeKey]]">Remove key</oj-button>
       </oj-bind-if>
-      <oj-button chroming="outlined" disabled="[[ $variables.apTesting ]]" on-oj-action="[[$listeners.testSettings]]">
-        <oj-bind-text value="[[ $variables.apTesting ? 'Testing…' : 'Test connection' ]]"></oj-bind-text>
-      </oj-button>
+      <oj-button chroming="outlined" disabled="[[ $variables.apTesting ]]" on-oj-action="[[$listeners.testSettings]]"
+        label="[[ $variables.apTesting ? 'Testing…' : 'Test connection' ]]"></oj-button>
       <oj-button chroming="borderless" on-oj-action="[[$listeners.closeSettings]]">Cancel</oj-button>
       <oj-button chroming="callToAction" on-oj-action="[[$listeners.saveSettings]]">Save</oj-button>
     </div>

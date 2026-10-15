@@ -92,9 +92,11 @@ User feedback: keep Home and Dashboard compact (no big cards, small charts ~12re
     (`pendingCount`, `toasts`, `apOpen`) set by `shellBridgeChain` / `autopilotSendChain` from DOM events
     that app-flow.js raises on `<span id="mxBridge">`: `counts()` raises `mxcounts`, `message()` raises
     `mxtoast`, `openAutopilot()` raises `mxask`, desktop tray/menu commands raise `mxcommand`. So call
-    `counts()` after every data change and build toasts with `message()`. Don't bind shell HTML to
-    `$application.variables` that flow pages change: the header showed "Approvals (0)" that way.
+    `counts()` after every data change and build toasts with `message()`.
     Bridge event names are lower case (`on-mxcounts`), so the attribute maps to the event as is.
+    **Text that changes on an `oj-button` goes in its `label` attribute** (`label="[[ ... ]]"`): in JET 18
+    oj-button is a VComponent and an `oj-bind-text` inside it keeps its first value (that's why the header
+    showed "Approvals (0)").
 13. **Desktop client** (`desktop/`, Electron): `window.mxDesktop` exists only there (`DESKTOP` in
     app-flow.js). It keeps the Claude key in OS secure storage and makes the Claude call in the main
     process (`apCall` uses `mxDesktop.claude()`), shows the pending count on the tray and taskbar, notifies

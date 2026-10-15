@@ -86,6 +86,15 @@ function createServer(root, onMiss) {
         send(res, 200, MIME[path.extname(file).toLowerCase()] || 'application/octet-stream', req.method === 'HEAD' ? '' : data);
         return;
       }
+      // VB asks for resources under a version_<n>/ prefix; serve them from the folder itself when needed.
+      const unversioned = pathname.replace(/^\/version_\d+\//, '/');
+      if (unversioned !== pathname) {
+        const alt = path.normalize(path.join(base, unversioned));
+        if (alt.startsWith(base + path.sep) && fs.existsSync(alt) && fs.statSync(alt).isFile()) {
+          send(res, 200, MIME[path.extname(alt).toLowerCase()] || 'application/octet-stream', req.method === 'HEAD' ? '' : fs.readFileSync(alt));
+          return;
+        }
+      }
       // Single-page app: unknown routes without a file extension get index.html.
       if (!path.extname(pathname)) {
         fs.readFile(path.join(base, 'index.html'), (err2, html) => {

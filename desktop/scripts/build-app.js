@@ -5,10 +5,11 @@
  * Run from the repository folder after `npm run build` (npm run build:desktop does both):
  *
  *   1. starts `grunt vb-serve:webApps/maint --port=18888` (the same server as npm run serve);
- *   2. copies the processed web app (build/processed/webApps/maint) to desktop/app;
- *   3. saves index.html as the server sends it (with the VB runtime scripts filled in), and any
- *      file it links to that is not in the processed folder;
- *   4. stops the server and checks that nothing in index.html still waits for a VB server.
+ *   2. downloads every file of the processed web app (build/processed/webApps/maint) from that server
+ *      into desktop/app, so whatever vb-serve fills in on the fly (index.html scripts, %{env.*}%
+ *      values) is filled in; a file the server doesn't serve is copied as it is;
+ *   3. also saves what index.html links to and the services catalog the VB runtime asks for;
+ *   4. stops the server and checks that nothing still waits for a VB server.
  *
  * The desktop client then serves desktop/app on http://localhost:18888/.
  */
@@ -125,8 +126,39 @@ async function main() {
     }
 
     fs.rmSync(dest, { recursive: true, force: true });
-    fs.cpSync(processed, dest, { recursive: true });
+    fs.mkdirSync(dest, { recursive: true });
+
+    // Every processed file, as vb-serve serves it (or as it is, when the server doesn't serve it).
+    const files = [];
+    const list = (dir) => fs.readdirSync(dir, { withFileTypes: true }).forEach((e) => (e.isDirectory() ? list(path.join(dir, e.name)) : files.push(path.join(dir, e.name))));
+    list(processed);
+    let served = 0;
+    let copied = 0;
+    const queue = files.slice();
+    const worker = async () => {
+      while (queue.length) {
+        const file = queue.shift();
+        const rel = path.relative(processed, file).split(path.sep);
+        const target = path.join(dest, ...rel);
+        fs.mkdirSync(path.dirname(target), { recursive: true });
+        let r = null;
+        try {
+          r = await get(new URL(rel.map(encodeURIComponent).join('/'), BASE).href);
+        } catch {
+          r = null;
+        }
+        if (r && r.ok) {
+          fs.writeFileSync(target, r.body);
+          served += 1;
+        } else {
+          fs.copyFileSync(file, target);
+          copied += 1;
+        }
+      }
+    };
+    await Promise.all(Array.from({ length: 12 }, worker));
     fs.writeFileSync(path.join(dest, 'index.html'), index, 'utf8');
+    console.log(`build-app: ${served} files from vb-serve, ${copied} copied as they are.`);
 
     const added = [];
     for (const file of linkedFiles(index)) {
@@ -144,19 +176,66 @@ async function main() {
       }
     }
 
+    // The services catalog the VB runtime asks for (at the root and under version_* folders).
+    const versions = new Set(fs.readdirSync(dest).filter((n) => /^version_\d+$/.test(n)));
+    (index.match(/version_\d+/g) || []).forEach((v) => versions.add(v));
+    const roots = [''].concat([...versions].map((v) => `${v}/`));
+    for (const root of roots) {
+      const rel = `${root}services/catalog.json`;
+      const target = path.join(dest, ...rel.split('/'));
+      if (fs.existsSync(target)) {
+        continue;
+      }
+      try {
+        const r = await get(new URL(rel, BASE).href);
+        if (r.ok) {
+          fs.mkdirSync(path.dirname(target), { recursive: true });
+          fs.writeFileSync(target, r.body);
+          added.push(`/${rel}`);
+        }
+      } catch {
+        // not served: the runtime logs it and carries on
+      }
+    }
+
     const left = ['<!-- visualBuilderScripts -->', 'vb:inject'].filter((marker) => index.includes(marker));
     if (left.length) {
       fail(`index.html from vb-serve still contains ${left.join(' and ')}.`);
     }
+    const placeholders = [];
+    const scan = (dir) =>
+      fs.readdirSync(dir, { withFileTypes: true }).forEach((e) => {
+        const full = path.join(dir, e.name);
+        if (e.isDirectory()) {
+          scan(full);
+        } else if (/\.(html|json|js)$/.test(e.name) && fs.readFileSync(full, 'utf8').includes('%{env.')) {
+          placeholders.push(path.relative(dest, full));
+        }
+      });
+    scan(dest);
+    if (placeholders.length) {
+      console.warn(`build-app: %{env.*}% placeholders left in ${placeholders.join(', ')}`);
+    }
 
-    let files = 0;
-    const count = (dir) => fs.readdirSync(dir, { withFileTypes: true }).forEach((e) => (e.isDirectory() ? count(path.join(dir, e.name)) : (files += 1)));
+    let total = 0;
+    const count = (dir) => fs.readdirSync(dir, { withFileTypes: true }).forEach((e) => (e.isDirectory() ? count(path.join(dir, e.name)) : (total += 1)));
     count(dest);
     fs.writeFileSync(
       path.join(dest, 'desktop-build.json'),
-      `${JSON.stringify({ builtAt: new Date().toISOString(), from: path.relative(repo, processed), servedBy: 'grunt vb-serve', added, files }, null, 2)}\n`,
+      `${JSON.stringify({ builtAt: new Date().toISOString(), from: path.relative(repo, processed), servedBy: 'grunt vb-serve', served, copied, added, placeholders, files: total }, null, 2)}\n`,
     );
-    console.log(`build-app: desktop/app is ready: ${files} files (${added.length} added from vb-serve: ${added.join(', ') || 'none'}).`);
+    console.log(`build-app: desktop/app is ready: ${total} files (${added.length} more from vb-serve: ${added.join(', ') || 'none'}).`);
+    if (process.env.GITHUB_ACTIONS === 'true') {
+      const esc = (t) => String(t).replace(/%/g, '%25').replace(/\r/g, '%0D').replace(/\n/g, '%0A');
+      const summary = [
+        `${total} files: ${served} from vb-serve, ${copied} copied as they are`,
+        `added: ${added.join(', ') || 'none'}`,
+        `placeholders left: ${placeholders.join(', ') || 'none'}`,
+        `top level: ${fs.readdirSync(dest).join(', ')}`,
+        `version tokens in index.html: ${[...new Set(index.match(/version_\d+/g) || [])].join(', ') || 'none'}`,
+      ];
+      console.log(`::notice title=Desktop app files::${esc(summary.join('\n'))}`);
+    }
   } finally {
     stop();
   }

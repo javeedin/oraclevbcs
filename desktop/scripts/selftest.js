@@ -99,7 +99,10 @@ async function run({ win, appUrl, getCounts, key, log }) {
 
     const bridge = await js('typeof window.mxDesktop === "object" && window.mxDesktop.isDesktop === true');
     check('window.mxDesktop is exposed', bridge === true);
-    check('Node is not exposed to the page', (await js('typeof require === "undefined" && typeof process === "undefined"')) === true);
+    check(
+      'Node is not exposed to the page',
+      (await js('!(typeof process === "object" && process && process.versions && process.versions.node) && !(typeof require === "function" && typeof require.resolve === "function" && typeof require.cache === "object")')) === true,
+    );
 
     const info = await js('window.mxDesktop.info()');
     check('info()', info && info.isDesktop === true && typeof info.version === 'string', info);
@@ -141,7 +144,11 @@ async function run({ win, appUrl, getCounts, key, log }) {
         '(() => { const b = [...document.querySelectorAll(".mx-appbar oj-button")].map((e) => e.textContent.trim()); const a = b.find((t) => /^Approvals \\(\\d+\\)$/.test(t)); return a && !/\\(0\\)$/.test(a) ? b : null; })()',
         30000,
       );
-      check('header shows the approvals waiting (not 0)', !!header, header || (await js('[...document.querySelectorAll(".mx-appbar oj-button")].map((e) => e.textContent.trim())')));
+      check(
+        'header shows the approvals waiting (not 0)',
+        !!header,
+        header || (await js('[...document.querySelectorAll(".mx-appbar oj-button")].map((e) => `${e.textContent.trim()} | title=${e.getAttribute("title") || ""}`)')),
+      );
       check('no "Download desktop app" button inside the desktop app', (await js('!document.body.textContent.includes("Download desktop app")')) === true);
 
       const shown = header ? Number((header.find((t) => /^Approvals/.test(t)).match(/\((\d+)\)/) || [])[1]) : -1;

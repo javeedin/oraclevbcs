@@ -35,9 +35,7 @@
               <oj-bind-text value="[[ $variables.selectedIds.length + ' of ' + $variables.drafts.length + ' selected' ]]"></oj-bind-text>
             </span>
             <span class="mx-toolbar-spacer"></span>
-            <oj-button chroming="borderless" on-oj-action="[[$listeners.toggleAll]]">
-              <oj-bind-text value="[[ $variables.selectedIds.length === $variables.drafts.length ? 'Clear selection' : 'Select all' ]]"></oj-bind-text>
-            </oj-button>
+            <oj-button chroming="borderless" on-oj-action="[[$listeners.toggleAll]]" label="[[ $variables.selectedIds.length === $variables.drafts.length ? 'Clear selection' : 'Select all' ]]"></oj-button>
           </div>
 
           <oj-bind-for-each data="[[ $variables.drafts ]]">
