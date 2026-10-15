@@ -1,0 +1,171 @@
+<div class="mx-page">
+
+  <header class="mx-page-head">
+    <p class="mx-crumb">Requests <span aria-hidden="true">/</span> New request</p>
+    <h1 class="mx-page-title">Raise a maintenance request</h1>
+    <p class="mx-page-sub">Describe the problem, choose a priority, then save it as a draft or send it straight for approval.</p>
+  </header>
+
+  <div class="mx-form-grid">
+
+    <!-- ============ Form ============ -->
+    <div class="mx-form-col">
+      <oj-validation-group id="requestValidation" role="group" aria-label="Request details">
+
+        <section class="mx-card">
+          <header class="mx-card-head">
+            <h2 class="mx-card-title">What needs attention</h2>
+          </header>
+          <oj-form-layout class="mx-form" max-columns="1" label-edge="top">
+            <oj-select-single id="equipmentSelect"
+              label-hint="Equipment"
+              required
+              placeholder="Search by name or asset ID"
+              data="[[ $variables.equipmentADP ]]"
+              value="{{ $variables.form.equipmentId }}"
+              on-value-changed="[[$listeners.equipmentChanged]]">
+            </oj-select-single>
+            <oj-input-text
+              label-hint="Short title"
+              required
+              length.max="80"
+              placeholder="For example: conveyor belt slipping on line 2"
+              value="{{ $variables.form.title }}">
+            </oj-input-text>
+            <oj-text-area
+              label-hint="What did you observe?"
+              required
+              rows="5"
+              length.max="1000"
+              length.counter="remaining"
+              placeholder="When it started, what you saw or heard, and anything already tried"
+              value="{{ $variables.form.description }}">
+            </oj-text-area>
+          </oj-form-layout>
+        </section>
+
+        <section class="mx-card">
+          <header class="mx-card-head">
+            <h2 class="mx-card-title">Type, priority and timing</h2>
+          </header>
+
+          <div class="mx-field">
+            <p class="mx-field-label" id="priorityLabel">Priority</p>
+            <oj-buttonset-one class="mx-priority-set"
+              aria-labelledby="priorityLabel"
+              value="{{ $variables.form.priority }}"
+              on-value-changed="[[$listeners.priorityChanged]]">
+              <oj-option value="Low">Low</oj-option>
+              <oj-option value="Medium">Medium</oj-option>
+              <oj-option value="High">High</oj-option>
+              <oj-option value="Critical">Critical</oj-option>
+            </oj-buttonset-one>
+            <p class="mx-field-help"><oj-bind-text value="[[ $functions.priorityHelp($variables.form.priority) ]]"></oj-bind-text></p>
+          </div>
+
+          <oj-form-layout class="mx-form" max-columns="2" direction="row" label-edge="top">
+            <oj-select-single
+              label-hint="Request type"
+              required
+              data="[[ $variables.typeADP ]]"
+              value="{{ $variables.form.type }}"
+              on-value-changed="[[$listeners.typeChanged]]">
+            </oj-select-single>
+            <oj-input-date
+              label-hint="Needed by"
+              min="[[ $variables.minDate ]]"
+              value="{{ $variables.form.neededBy }}">
+            </oj-input-date>
+            <oj-input-number
+              label-hint="Estimated cost (AED)"
+              min="0"
+              step="100"
+              value="{{ $variables.form.estCost }}"
+              on-value-changed="[[$listeners.costChanged]]">
+            </oj-input-number>
+            <oj-switch
+              label-hint="Equipment is down"
+              value="{{ $variables.form.downtime }}">
+            </oj-switch>
+          </oj-form-layout>
+        </section>
+      </oj-validation-group>
+
+      <div class="mx-form-actions">
+        <oj-bind-if test="[[ $variables.errorText ]]">
+          <p class="mx-inline-error" role="alert"><oj-bind-text value="[[ $variables.errorText ]]"></oj-bind-text></p>
+        </oj-bind-if>
+        <span class="mx-spacer"></span>
+        <oj-button chroming="borderless" on-oj-action="[[$listeners.cancel]]">Cancel</oj-button>
+        <oj-button chroming="outlined" disabled="[[ $variables.isSaving ]]" on-oj-action="[[$listeners.saveDraft]]">Save as draft</oj-button>
+        <oj-button chroming="callToAction" disabled="[[ $variables.isSaving ]]" on-oj-action="[[$listeners.submitRequest]]">Submit for approval</oj-button>
+      </div>
+    </div>
+
+    <!-- ============ Live side panel ============ -->
+    <aside class="mx-side-col">
+
+      <section class="mx-card">
+        <header class="mx-card-head">
+          <h2 class="mx-card-title">Selected equipment</h2>
+        </header>
+        <oj-bind-if test="[[ !$variables.equipment.id ]]">
+          <div class="mx-placeholder">
+            <svg viewBox="0 0 24 24" width="32" height="32" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M14.7 6.3a4 4 0 0 0-5.3 5.3l-5.9 5.9a1.5 1.5 0 0 0 2.1 2.1l5.9-5.9a4 4 0 0 0 5.3-5.3l-2.4 2.4-2.1-.4-.4-2.1z"></path></svg>
+            <p>Choose equipment to see its status, health and preventive schedule here.</p>
+          </div>
+        </oj-bind-if>
+        <oj-bind-if test="[[ $variables.equipment.id ]]">
+          <div class="mx-eq-summary">
+            <div class="mx-eq-summary-head">
+              <span :class="[[ 'mx-cat-tile is-' + $application.functions.categoryKey($variables.equipment.category) ]]" aria-hidden="true">
+                <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path :d="[[ $application.functions.categoryIcon($variables.equipment.category) ]]"></path></svg>
+              </span>
+              <span class="mx-eq-summary-name">
+                <strong><oj-bind-text value="[[ $variables.equipment.name ]]"></oj-bind-text></strong>
+                <span class="mx-muted"><oj-bind-text value="[[ $variables.equipment.id + ' · ' + $variables.equipment.location ]]"></oj-bind-text></span>
+              </span>
+              <span :class="[[ 'mx-status is-' + $application.functions.equipmentTone($variables.equipment.status) ]]"><oj-bind-text value="[[ $variables.equipment.status ]]"></oj-bind-text></span>
+            </div>
+            <div class="mx-health">
+              <span class="mx-health-label">Health</span>
+              <span class="mx-meter" aria-hidden="true"><span :class="[[ 'mx-meter-fill is-' + $application.functions.healthTone($variables.equipment.health) ]]" :style.width="[[ $variables.equipment.health + '%' ]]"></span></span>
+              <span class="mx-health-pct"><oj-bind-text value="[[ $variables.equipment.health + '%' ]]"></oj-bind-text></span>
+            </div>
+            <dl class="mx-facts">
+              <div><dt>Criticality</dt><dd><oj-bind-text value="[[ $variables.equipment.criticality ]]"></oj-bind-text></dd></div>
+              <div><dt>Last service</dt><dd><oj-bind-text value="[[ $application.functions.fmtDate($variables.equipment.lastService) ]]"></oj-bind-text></dd></div>
+              <div><dt>Next PM</dt><dd :class="[[ 'is-' + $variables.equipment.pmState ]]"><oj-bind-text value="[[ $application.functions.fmtDate($variables.equipment.nextPm) + ' (' + $application.functions.relDays($variables.equipment.nextPm) + ')' ]]"></oj-bind-text></dd></div>
+              <div><dt>Open requests</dt><dd><oj-bind-text value="[[ $variables.equipment.openRequests ]]"></oj-bind-text></dd></div>
+            </dl>
+            <oj-bind-if test="[[ $variables.equipment.openRequests > 0 ]]">
+              <p class="mx-note is-warn">This asset already has open requests. Check My requests so you don't raise a duplicate.</p>
+            </oj-bind-if>
+            <button type="button" class="mx-link" on-click="[[$listeners.viewEquipment]]">Open the equipment list</button>
+          </div>
+        </oj-bind-if>
+      </section>
+
+      <section class="mx-card">
+        <header class="mx-card-head">
+          <h2 class="mx-card-title">Approval route</h2>
+          <span class="mx-card-hint"><oj-bind-text value="[[ $variables.route.length + ' ' + $application.functions.plural($variables.route.length, 'step', 'steps') ]]"></oj-bind-text></span>
+        </header>
+        <ol class="mx-route">
+          <oj-bind-for-each data="[[ $variables.route ]]">
+            <template>
+              <li class="mx-route-step">
+                <span class="mx-route-num"><oj-bind-text value="[[ $current.data.level ]]"></oj-bind-text></span>
+                <span class="mx-route-text">
+                  <span class="mx-route-role"><oj-bind-text value="[[ $current.data.role ]]"></oj-bind-text></span>
+                  <span class="mx-muted"><oj-bind-text value="[[ $current.data.name + ' · ' + $current.data.reason ]]"></oj-bind-text></span>
+                </span>
+              </li>
+            </template>
+          </oj-bind-for-each>
+        </ol>
+        <p class="mx-field-help">The route updates as you change the priority, type or cost. Critical requests and anything from AED 10,000 also go to the plant manager; safety requests also go to the HSE officer.</p>
+      </section>
+    </aside>
+  </div>
+</div>

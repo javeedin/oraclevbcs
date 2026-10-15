@@ -1,0 +1,60 @@
+{
+  "id": "maint",
+  "description": "Maintenance module: raise requests, browse equipment, route approvals and track work orders",
+  "defaultPage": "shell",
+  "services": {},
+  "translations": {
+    "app": {
+      "path": "./resources/strings/app/nls/app-strings"
+    }
+  },
+  "types": {},
+  "variables": {
+    "activeNav": {
+      "type": "string",
+      "defaultValue": "dashboard"
+    },
+    "counts": {
+      "type": "object",
+      "defaultValue": {
+        "openRequests": 0,
+        "drafts": 0,
+        "pending": 0,
+        "inboxByRole": {
+          "supervisor": 0,
+          "manager": 0,
+          "hse": 0
+        },
+        "workOrdersActive": 0,
+        "equipmentDown": 0
+      }
+    },
+    "messages": {
+      "type": "object[]",
+      "defaultValue": []
+    },
+    "prefillEquipmentId": {
+      "type": "string",
+      "defaultValue": ""
+    }
+  },
+  "eventListeners": {},
+  "userConfig": {
+    "type": "vb/DefaultSecurityProvider",
+    "configuration": {},
+    "embedding": "deny"
+  },
+  "security": {
+    "access": {
+      "requiresAuthentication": false
+    }
+  },
+  "imports": {
+    "css": [
+      "/resources/css/app.css"
+    ]
+  },
+  "@dt": {
+    "applicationTemplateType": "redwood"
+  }
+}

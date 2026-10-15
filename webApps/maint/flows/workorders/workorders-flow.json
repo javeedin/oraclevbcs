@@ -1,0 +1,8 @@
+{
+  "id": "workorders",
+  "description": "Work order board",
+  "defaultPage": "work-orders",
+  "services": {},
+  "types": {},
+  "variables": {}
+}

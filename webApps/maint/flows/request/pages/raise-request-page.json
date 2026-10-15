@@ -1,0 +1,190 @@
+{
+  "title": "Raise request",
+  "description": "Maintenance request form with validation, a live equipment preview and the approval route the request will follow",
+  "variables": {
+    "form": {
+      "type": "object",
+      "defaultValue": {
+        "equipmentId": null,
+        "title": "",
+        "description": "",
+        "type": "Corrective",
+        "priority": "Medium",
+        "neededBy": null,
+        "estCost": 0,
+        "downtime": false
+      }
+    },
+    "equipmentADP": {
+      "type": "vb/ArrayDataProvider2",
+      "defaultValue": {
+        "keyAttributes": "value",
+        "itemType": "OptionType"
+      }
+    },
+    "typeADP": {
+      "type": "vb/ArrayDataProvider2",
+      "defaultValue": {
+        "keyAttributes": "value",
+        "itemType": "OptionType"
+      }
+    },
+    "equipment": {
+      "type": "object",
+      "defaultValue": {}
+    },
+    "route": {
+      "type": "object[]",
+      "defaultValue": []
+    },
+    "minDate": {
+      "type": "string",
+      "defaultValue": ""
+    },
+    "isSaving": {
+      "type": "boolean",
+      "defaultValue": false
+    },
+    "errorText": {
+      "type": "string",
+      "defaultValue": ""
+    }
+  },
+  "metadata": {},
+  "types": {
+    "OptionType": {
+      "value": "string",
+      "label": "string"
+    }
+  },
+  "eventListeners": {
+    "vbEnter": {
+      "chains": [
+        {
+          "chain": "initRequestChain"
+        }
+      ]
+    },
+    "equipmentChanged": {
+      "chains": [
+        {
+          "chain": "previewChain",
+          "parameters": {
+            "field": "equipmentId",
+            "value": "{{ $event.detail.value }}"
+          }
+        }
+      ]
+    },
+    "typeChanged": {
+      "chains": [
+        {
+          "chain": "previewChain",
+          "parameters": {
+            "field": "type",
+            "value": "{{ $event.detail.value }}"
+          }
+        }
+      ]
+    },
+    "priorityChanged": {
+      "chains": [
+        {
+          "chain": "previewChain",
+          "parameters": {
+            "field": "priority",
+            "value": "{{ $event.detail.value }}"
+          }
+        }
+      ]
+    },
+    "costChanged": {
+      "chains": [
+        {
+          "chain": "previewChain",
+          "parameters": {
+            "field": "estCost",
+            "value": "{{ $event.detail.value }}"
+          }
+        }
+      ]
+    },
+    "saveDraft": {
+      "chains": [
+        {
+          "chain": "saveRequestChain",
+          "parameters": {
+            "submit": false
+          }
+        }
+      ]
+    },
+    "submitRequest": {
+      "chains": [
+        {
+          "chain": "saveRequestChain",
+          "parameters": {
+            "submit": true
+          }
+        }
+      ]
+    },
+    "cancel": {
+      "chains": [
+        {
+          "chain": "goToChain",
+          "parameters": {
+            "flow": "dashboard"
+          }
+        }
+      ]
+    },
+    "viewEquipment": {
+      "chains": [
+        {
+          "chain": "goToChain",
+          "parameters": {
+            "flow": "equipment"
+          }
+        }
+      ]
+    }
+  },
+  "imports": {
+    "components": {
+      "oj-button": {
+        "path": "ojs/ojbutton"
+      },
+      "oj-buttonset-one": {
+        "path": "ojs/ojbutton"
+      },
+      "oj-option": {
+        "path": "ojs/ojoption"
+      },
+      "oj-select-single": {
+        "path": "ojs/ojselectsingle"
+      },
+      "oj-input-text": {
+        "path": "ojs/ojinputtext"
+      },
+      "oj-text-area": {
+        "path": "ojs/ojinputtext"
+      },
+      "oj-input-date": {
+        "path": "ojs/ojdatetimepicker"
+      },
+      "oj-input-number": {
+        "path": "ojs/ojinputnumber"
+      },
+      "oj-switch": {
+        "path": "ojs/ojswitch"
+      },
+      "oj-form-layout": {
+        "path": "ojs/ojformlayout"
+      },
+      "oj-validation-group": {
+        "path": "ojs/ojvalidationgroup"
+      }
+    }
+  }
+}

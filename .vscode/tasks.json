@@ -1,0 +1,48 @@
+{
+  // Run with Ctrl+Shift+P > "Tasks: Run Task", or Ctrl+Shift+B for the default build.
+  // Oracle's build tools need Node 20 (see .nvmrc). Node 24 fails with "Unexpected identifier 'assert'".
+  "version": "2.0.0",
+  "tasks": [
+    {
+      "label": "VB: install build tools",
+      "type": "shell",
+      "command": "npm install",
+      "problemMatcher": []
+    },
+    {
+      "label": "VB: build (validate sources)",
+      "detail": "grunt vb-process-local - catches broken JSON, missing files and bad metadata before you push",
+      "type": "shell",
+      "command": "npx grunt vb-process-local",
+      "group": { "kind": "build", "isDefault": true },
+      "problemMatcher": []
+    },
+    {
+      "label": "VB: local preview (port 8888)",
+      "detail": "Builds and serves webApps/maint at http://localhost:8888",
+      "type": "shell",
+      "command": "npx grunt vb-process-local && npx grunt vb-serve:webApps/maint --port=8888 --open",
+      "isBackground": true,
+      "problemMatcher": []
+    },
+    {
+      "label": "VB: audit",
+      "detail": "grunt vb-audit - Oracle's JET and VB best-practice rules",
+      "type": "shell",
+      "command": "npx grunt vb-audit",
+      "problemMatcher": []
+    },
+    {
+      "label": "VB: package for deployment",
+      "type": "shell",
+      "command": "npx grunt vb-process-local vb-package",
+      "problemMatcher": []
+    },
+    {
+      "label": "Lint JS (modules + action chains)",
+      "type": "shell",
+      "command": "npx eslint \"webApps/**/*.js\"",
+      "problemMatcher": ["$eslint-stylish"]
+    }
+  ]
+}

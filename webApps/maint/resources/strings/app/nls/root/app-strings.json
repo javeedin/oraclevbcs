@@ -1,0 +1,10 @@
+{
+  "app_title": "Maintenance",
+  "@app_title": {
+    "description": "Application name shown in the header"
+  },
+  "app_subtitle": "Requests, equipment, approvals and work orders",
+  "@app_subtitle": {
+    "description": "Subtitle shown on the dashboard"
+  }
+}

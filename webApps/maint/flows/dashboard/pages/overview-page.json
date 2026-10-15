@@ -1,0 +1,138 @@
+{
+  "title": "Maintenance dashboard",
+  "description": "Welcome banner, KPIs, quick actions, charts and the items that need attention",
+  "variables": {
+    "model": {
+      "type": "object",
+      "defaultValue": {
+        "kpis": [],
+        "statusPoints": [],
+        "health": [],
+        "attention": [],
+        "upcomingPm": [],
+        "recent": [],
+        "totalRequests": 0,
+        "down": 0,
+        "pending": 0,
+        "pmDue": 0,
+        "pmOverdue": 0
+      }
+    },
+    "statusADP": {
+      "type": "vb/ArrayDataProvider2",
+      "defaultValue": {
+        "keyAttributes": "id",
+        "itemType": "ChartPointType"
+      }
+    },
+    "weeklyADP": {
+      "type": "vb/ArrayDataProvider2",
+      "defaultValue": {
+        "keyAttributes": "id",
+        "itemType": "ChartPointType"
+      }
+    },
+    "quickActions": {
+      "type": "object[]",
+      "defaultValue": [
+        {
+          "flow": "request",
+          "title": "Raise a request",
+          "text": "Report a fault or ask for planned work",
+          "tone": "terra",
+          "icon": "M12 3.5a8.5 8.5 0 1 0 0 17 8.5 8.5 0 0 0 0-17zM12 8v8M8 12h8"
+        },
+        {
+          "flow": "equipment",
+          "title": "Browse equipment",
+          "text": "Find an asset, check its health and history",
+          "tone": "teal",
+          "icon": "M14.7 6.3a4 4 0 0 0-5.3 5.3l-5.9 5.9a1.5 1.5 0 0 0 2.1 2.1l5.9-5.9a4 4 0 0 0 5.3-5.3l-2.4 2.4-2.1-.4-.4-2.1z"
+        },
+        {
+          "flow": "approval",
+          "title": "Send for approval",
+          "text": "Route your drafts to the right approvers",
+          "tone": "ochre",
+          "icon": "M20.5 3.5L10 14M20.5 3.5L14 20.5l-4-6.5-6.5-4z"
+        },
+        {
+          "flow": "inbox",
+          "title": "Review approvals",
+          "text": "Approve or reject requests waiting for you",
+          "tone": "forest",
+          "icon": "M12 3.5a8.5 8.5 0 1 0 0 17 8.5 8.5 0 0 0 0-17zM8.3 12.3l2.6 2.6 4.8-5"
+        }
+      ]
+    }
+  },
+  "metadata": {},
+  "types": {
+    "ChartPointType": {
+      "id": "string",
+      "series": "string",
+      "group": "string",
+      "value": "number",
+      "color": "string"
+    }
+  },
+  "eventListeners": {
+    "vbEnter": {
+      "chains": [
+        {
+          "chain": "loadOverviewChain"
+        }
+      ]
+    },
+    "goTo": {
+      "chains": [
+        {
+          "chain": "goToChain",
+          "parameters": {
+            "flow": "{{ $current.data.flow }}"
+          }
+        }
+      ]
+    },
+    "goRequest": {
+      "chains": [
+        {
+          "chain": "goToChain",
+          "parameters": {
+            "flow": "request"
+          }
+        }
+      ]
+    },
+    "goEquipment": {
+      "chains": [
+        {
+          "chain": "goToChain",
+          "parameters": {
+            "flow": "equipment"
+          }
+        }
+      ]
+    },
+    "goRequests": {
+      "chains": [
+        {
+          "chain": "goToChain",
+          "parameters": {
+            "flow": "requests"
+          }
+        }
+      ]
+    }
+  },
+  "imports": {
+    "components": {
+      "oj-chart": {
+        "path": "ojs/ojchart"
+      },
+      "oj-chart-item": {
+        "path": "ojs/ojchart"
+      }
+    }
+  }
+}

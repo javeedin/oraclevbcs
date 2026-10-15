@@ -1,0 +1,50 @@
+{
+  // ---- Make a VB app easy to navigate ----
+  // Nest each page/flow's .html and .js under its .json in the Explorer,
+  // so a page shows up as one item you can expand.
+  "explorer.fileNesting.enabled": true,
+  "explorer.fileNesting.expand": false,
+  "explorer.fileNesting.patterns": {
+    "*-page.json": "${capture}-page.html, ${capture}-page.js",
+    "*-fragment.json": "${capture}-fragment.html, ${capture}-fragment.js",
+    "*-flow.json": "${capture}-flow.js",
+    "app-flow.json": "app-flow.js",
+    "package.json": "package-lock.json, Gruntfile.js, eslint.config.mjs, .prettierrc, .nvmrc"
+  },
+
+  // Build output and dependencies are noise in search and the file tree
+  "search.exclude": {
+    "**/node_modules": true,
+    "**/build": true
+  },
+  "files.watcherExclude": {
+    "**/node_modules/**": true,
+    "**/build/**": true
+  },
+
+  // ---- Formatting ----
+  // JS and CSS format on save. JSON and HTML are left alone on purpose: the VB Designer
+  // writes those files too, and reformatting them creates noisy Git diffs.
+  "editor.formatOnSave": false,
+  "[javascript]": {
+    "editor.defaultFormatter": "esbenp.prettier-vscode",
+    "editor.formatOnSave": true
+  },
+  "[css]": {
+    "editor.defaultFormatter": "esbenp.prettier-vscode",
+    "editor.formatOnSave": true
+  },
+  "[json]": {
+    "editor.defaultFormatter": "vscode.json-language-features",
+    "editor.tabSize": 2
+  },
+  "[html]": {
+    "editor.tabSize": 2
+  },
+
+  // ---- Linting ----
+  "eslint.validate": ["javascript"],
+
+  // ---- CSS design tokens (--mx-*) ----
+  "cssVariables.lookupFiles": ["webApps/**/resources/css/*.css"]
+}

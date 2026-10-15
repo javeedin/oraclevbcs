@@ -1,0 +1,8 @@
+{
+  "id": "dashboard",
+  "description": "Dashboard: KPIs, charts and what needs attention",
+  "defaultPage": "overview",
+  "services": {},
+  "types": {},
+  "variables": {}
+}

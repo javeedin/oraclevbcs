@@ -1,0 +1,217 @@
+<div class="mx-page">
+
+  <header class="mx-page-head mx-page-head--row">
+    <div>
+      <p class="mx-crumb">Assets <span aria-hidden="true">/</span> Equipment</p>
+      <h1 class="mx-page-title">Browse equipment</h1>
+      <p class="mx-page-sub">
+        <oj-bind-text value="[[ $variables.stats.total + ' assets · ' + $variables.stats.running + ' running · ' + $variables.stats.maintenance + ' in maintenance · ' + $variables.stats.down + ' down' ]]"></oj-bind-text>
+      </p>
+    </div>
+    <oj-buttonset-one class="mx-view-toggle" value="{{ $variables.view }}" chroming="outlined" aria-label="View">
+      <oj-option value="cards">
+        <svg slot="startIcon" viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.7" aria-hidden="true"><path d="M4 4h7v7H4zM13 4h7v7h-7zM4 13h7v7H4zM13 13h7v7h-7z"></path></svg>
+        Cards
+      </oj-option>
+      <oj-option value="table">
+        <svg slot="startIcon" viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.7" aria-hidden="true"><path d="M4 5h16v14H4zM4 10h16M4 15h16M10 5v14"></path></svg>
+        Table
+      </oj-option>
+    </oj-buttonset-one>
+  </header>
+
+  <!-- ============ Filters ============ -->
+  <section class="mx-filters">
+    <oj-input-text class="mx-search"
+      placeholder="Search by name, asset ID, location or make"
+      clear-icon="conditional"
+      aria-label="Search equipment"
+      value="{{ $variables.search }}"
+      on-raw-value-changed="[[$listeners.searchChanged]]">
+    </oj-input-text>
+
+    <oj-buttonset-one class="mx-status-filter" value="{{ $variables.status }}" chroming="outlined" aria-label="Status" on-value-changed="[[$listeners.statusChanged]]">
+      <oj-option value="all">All</oj-option>
+      <oj-option value="Running">Running</oj-option>
+      <oj-option value="Maintenance">Maintenance</oj-option>
+      <oj-option value="Down">Down</oj-option>
+    </oj-buttonset-one>
+
+    <div class="mx-chips" role="group" aria-label="Category">
+      <oj-bind-for-each data="[[ $variables.categoryChips ]]">
+        <template>
+          <button type="button" :class="[[ 'mx-chip' + ($current.data.selected ? ' is-selected' : '') ]]"
+            :aria-pressed="[[ $current.data.selected ? 'true' : 'false' ]]" on-click="[[$listeners.categoryClick]]">
+            <oj-bind-text value="[[ $current.data.label ]]"></oj-bind-text>
+            <span class="mx-chip-count"><oj-bind-text value="[[ $current.data.count ]]"></oj-bind-text></span>
+          </button>
+        </template>
+      </oj-bind-for-each>
+    </div>
+  </section>
+
+  <p class="mx-result-line">
+    <oj-bind-text value="[[ 'Showing ' + $variables.shown.length + ' of ' + $variables.all.length ]]"></oj-bind-text>
+    <oj-bind-if test="[[ $variables.shown.length !== $variables.all.length ]]">
+      <button type="button" class="mx-link" on-click="[[$listeners.clearFilters]]">Clear filters</button>
+    </oj-bind-if>
+  </p>
+
+  <!-- ============ Card view ============ -->
+  <oj-bind-if test="[[ $variables.view === 'cards' ]]">
+    <div class="mx-eq-grid">
+      <oj-bind-for-each data="[[ $variables.shown ]]">
+        <template>
+          <article :class="[[ 'mx-eq-card is-' + $application.functions.equipmentTone($current.data.status) ]]">
+            <button type="button" class="mx-eq-card-main" on-click="[[$listeners.openCard]]" :aria-label="[[ 'Details for ' + $current.data.name ]]">
+              <span class="mx-eq-card-top">
+                <span :class="[[ 'mx-cat-tile is-' + $application.functions.categoryKey($current.data.category) ]]" aria-hidden="true">
+                  <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path :d="[[ $application.functions.categoryIcon($current.data.category) ]]"></path></svg>
+                </span>
+                <span class="mx-eq-id"><oj-bind-text value="[[ $current.data.id ]]"></oj-bind-text></span>
+                <span :class="[[ 'mx-status is-' + $application.functions.equipmentTone($current.data.status) ]]"><oj-bind-text value="[[ $current.data.status ]]"></oj-bind-text></span>
+              </span>
+              <span class="mx-eq-name"><oj-bind-text value="[[ $current.data.name ]]"></oj-bind-text></span>
+              <span class="mx-eq-loc"><oj-bind-text value="[[ $current.data.location ]]"></oj-bind-text></span>
+              <span class="mx-health">
+                <span class="mx-health-label">Health</span>
+                <span class="mx-meter" aria-hidden="true"><span :class="[[ 'mx-meter-fill is-' + $application.functions.healthTone($current.data.health) ]]" :style.width="[[ $current.data.health + '%' ]]"></span></span>
+                <span class="mx-health-pct"><oj-bind-text value="[[ $current.data.health + '%' ]]"></oj-bind-text></span>
+              </span>
+              <span class="mx-eq-meta">
+                <span class="mx-crit"><oj-bind-text value="[[ 'Criticality ' + $current.data.criticality ]]"></oj-bind-text></span>
+                <span :class="[[ 'mx-pm is-' + $current.data.pmState ]]"><oj-bind-text value="[[ 'Next PM ' + $application.functions.fmtShort($current.data.nextPm) ]]"></oj-bind-text></span>
+              </span>
+            </button>
+            <div class="mx-eq-card-foot">
+              <span class="mx-muted">
+                <oj-bind-text value="[[ $current.data.openRequests ? $current.data.openRequests + ' open ' + $application.functions.plural($current.data.openRequests, 'request', 'requests') : 'No open requests' ]]"></oj-bind-text>
+              </span>
+              <button type="button" class="mx-link" on-click="[[$listeners.raiseFromCard]]">Raise request</button>
+            </div>
+          </article>
+        </template>
+      </oj-bind-for-each>
+    </div>
+  </oj-bind-if>
+
+  <!-- ============ Table view ============ -->
+  <oj-bind-if test="[[ $variables.view === 'table' ]]">
+    <section class="mx-card mx-card--flush">
+      <oj-table class="mx-table oj-table-stretch"
+        data="[[ $variables.tableADP ]]"
+        columns="[[ $variables.columns ]]"
+        display="list"
+        horizontal-grid-visible="enabled"
+        vertical-grid-visible="disabled"
+        aria-label="Equipment">
+
+        <template slot="assetTemplate">
+          <span class="mx-cell-asset">
+            <span :class="[[ 'mx-cat-dot is-' + $application.functions.categoryKey($current.row.category) ]]" aria-hidden="true"></span>
+            <span>
+              <span class="mx-cell-strong"><oj-bind-text value="[[ $current.row.name ]]"></oj-bind-text></span>
+              <span class="mx-muted mx-block"><oj-bind-text value="[[ $current.row.id ]]"></oj-bind-text></span>
+            </span>
+          </span>
+        </template>
+
+        <template slot="statusTemplate">
+          <span :class="[[ 'mx-status is-' + $application.functions.equipmentTone($current.data) ]]"><oj-bind-text value="[[ $current.data ]]"></oj-bind-text></span>
+        </template>
+
+        <template slot="healthTemplate">
+          <span class="mx-health mx-health--cell">
+            <span class="mx-meter" aria-hidden="true"><span :class="[[ 'mx-meter-fill is-' + $application.functions.healthTone($current.data) ]]" :style.width="[[ $current.data + '%' ]]"></span></span>
+            <span class="mx-health-pct"><oj-bind-text value="[[ $current.data + '%' ]]"></oj-bind-text></span>
+          </span>
+        </template>
+
+        <template slot="pmTemplate">
+          <span :class="[[ 'mx-pm is-' + $current.row.pmState ]]"><oj-bind-text value="[[ $application.functions.fmtDate($current.data) ]]"></oj-bind-text></span>
+        </template>
+
+        <template slot="actionTemplate">
+          <button type="button" class="mx-link" on-click="[[$listeners.openRow]]">Details</button>
+        </template>
+
+        <template slot="noData">
+          <p class="mx-empty-line">No equipment matches these filters.</p>
+        </template>
+      </oj-table>
+    </section>
+  </oj-bind-if>
+
+  <oj-bind-if test="[[ $variables.view === 'cards' && $variables.shown.length === 0 ]]">
+    <div class="mx-empty">
+      <p class="mx-empty-title">No equipment matches these filters</p>
+      <button type="button" class="mx-link" on-click="[[$listeners.clearFilters]]">Clear filters</button>
+    </div>
+  </oj-bind-if>
+
+  <!-- ============ Detail drawer ============ -->
+  <oj-drawer-popup class="mx-drawer-popup" edge="end" modality="modal" opened="{{ $variables.detailOpen }}" aria-label="Equipment details">
+    <div class="mx-panel">
+      <header class="mx-panel-head">
+        <span :class="[[ 'mx-cat-tile is-' + $application.functions.categoryKey($variables.selected.category) ]]" aria-hidden="true">
+          <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path :d="[[ $application.functions.categoryIcon($variables.selected.category) ]]"></path></svg>
+        </span>
+        <span class="mx-panel-title">
+          <span class="mx-panel-name"><oj-bind-text value="[[ $variables.selected.name ]]"></oj-bind-text></span>
+          <span class="mx-muted"><oj-bind-text value="[[ $variables.selected.id + ' · ' + $variables.selected.location ]]"></oj-bind-text></span>
+        </span>
+        <oj-button display="icons" chroming="borderless" on-oj-action="[[$listeners.closeDetail]]">
+          <svg slot="startIcon" viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18"></path></svg>
+          Close
+        </oj-button>
+      </header>
+
+      <div class="mx-panel-body">
+        <div class="mx-panel-status">
+          <span :class="[[ 'mx-status is-' + $application.functions.equipmentTone($variables.selected.status) ]]"><oj-bind-text value="[[ $variables.selected.status ]]"></oj-bind-text></span>
+          <span class="mx-health mx-health--wide">
+            <span class="mx-health-label">Health</span>
+            <span class="mx-meter" aria-hidden="true"><span :class="[[ 'mx-meter-fill is-' + $application.functions.healthTone($variables.selected.health) ]]" :style.width="[[ $variables.selected.health + '%' ]]"></span></span>
+            <span class="mx-health-pct"><oj-bind-text value="[[ $variables.selected.health + '%' ]]"></oj-bind-text></span>
+          </span>
+        </div>
+
+        <dl class="mx-facts mx-facts--2">
+          <div><dt>Category</dt><dd><oj-bind-text value="[[ $variables.selected.category ]]"></oj-bind-text></dd></div>
+          <div><dt>Criticality</dt><dd><oj-bind-text value="[[ $variables.selected.criticality ]]"></oj-bind-text></dd></div>
+          <div><dt>Manufacturer</dt><dd><oj-bind-text value="[[ $variables.selected.manufacturer ]]"></oj-bind-text></dd></div>
+          <div><dt>Model</dt><dd><oj-bind-text value="[[ $variables.selected.model ]]"></oj-bind-text></dd></div>
+          <div><dt>Serial number</dt><dd><oj-bind-text value="[[ $variables.selected.serial ]]"></oj-bind-text></dd></div>
+          <div><dt>Installed</dt><dd><oj-bind-text value="[[ $application.functions.fmtDate($variables.selected.installed) ]]"></oj-bind-text></dd></div>
+          <div><dt>Meter hours</dt><dd><oj-bind-text value="[[ $application.functions.fmtNumber($variables.selected.meterHours) ]]"></oj-bind-text></dd></div>
+          <div><dt>Last service</dt><dd><oj-bind-text value="[[ $application.functions.fmtDate($variables.selected.lastService) ]]"></oj-bind-text></dd></div>
+          <div><dt>Next PM</dt><dd :class="[[ 'is-' + $variables.selected.pmState ]]"><oj-bind-text value="[[ $application.functions.fmtDate($variables.selected.nextPm) + ' (' + $application.functions.relDays($variables.selected.nextPm) + ')' ]]"></oj-bind-text></dd></div>
+          <div><dt>Open requests</dt><dd><oj-bind-text value="[[ $variables.selected.openRequests ]]"></oj-bind-text></dd></div>
+        </dl>
+
+        <h3 class="mx-panel-subtitle">Maintenance history</h3>
+        <ul class="mx-history">
+          <oj-bind-for-each data="[[ $variables.history ]]">
+            <template>
+              <li class="mx-history-row">
+                <span class="mx-history-main">
+                  <span class="mx-cell-strong"><oj-bind-text value="[[ $current.data.id + ' · ' + $current.data.title ]]"></oj-bind-text></span>
+                  <span class="mx-muted mx-block"><oj-bind-text value="[[ $current.data.type + ' · ' + $application.functions.fmtDate($current.data.requestedOn) + ' · ' + $current.data.requestedBy ]]"></oj-bind-text></span>
+                </span>
+                <span :class="[[ 'mx-pill is-' + $application.functions.statusTone($current.data.status) ]]"><oj-bind-text value="[[ $current.data.status ]]"></oj-bind-text></span>
+              </li>
+            </template>
+          </oj-bind-for-each>
+        </ul>
+        <oj-bind-if test="[[ $variables.history.length === 0 ]]">
+          <p class="mx-empty-line">No requests recorded for this asset yet.</p>
+        </oj-bind-if>
+      </div>
+
+      <footer class="mx-panel-foot">
+        <oj-button chroming="outlined" on-oj-action="[[$listeners.closeDetail]]">Close</oj-button>
+        <oj-button chroming="callToAction" on-oj-action="[[$listeners.raiseFromDetail]]">Raise request for this asset</oj-button>
+      </footer>
+    </div>
+  </oj-drawer-popup>
+</div>

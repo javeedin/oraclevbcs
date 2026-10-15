@@ -1,0 +1,91 @@
+{
+  "title": "Send for approval",
+  "description": "Pick draft requests, preview who will approve each one, add a note and send them",
+  "variables": {
+    "drafts": {
+      "type": "object[]",
+      "defaultValue": []
+    },
+    "selectedIds": {
+      "type": "string[]",
+      "defaultValue": []
+    },
+    "approvers": {
+      "type": "object[]",
+      "defaultValue": []
+    },
+    "note": {
+      "type": "string",
+      "defaultValue": ""
+    },
+    "isSending": {
+      "type": "boolean",
+      "defaultValue": false
+    }
+  },
+  "metadata": {},
+  "types": {},
+  "eventListeners": {
+    "vbEnter": {
+      "chains": [
+        {
+          "chain": "loadDraftsChain"
+        }
+      ]
+    },
+    "toggleDraft": {
+      "chains": [
+        {
+          "chain": "toggleDraftChain",
+          "parameters": {
+            "id": "{{ $current.data.id }}"
+          }
+        }
+      ]
+    },
+    "toggleAll": {
+      "chains": [
+        {
+          "chain": "toggleAllChain"
+        }
+      ]
+    },
+    "send": {
+      "chains": [
+        {
+          "chain": "sendChain"
+        }
+      ]
+    },
+    "newRequest": {
+      "chains": [
+        {
+          "chain": "goToChain",
+          "parameters": {
+            "flow": "request"
+          }
+        }
+      ]
+    },
+    "viewRequests": {
+      "chains": [
+        {
+          "chain": "goToChain",
+          "parameters": {
+            "flow": "requests"
+          }
+        }
+      ]
+    }
+  },
+  "imports": {
+    "components": {
+      "oj-button": {
+        "path": "ojs/ojbutton"
+      },
+      "oj-text-area": {
+        "path": "ojs/ojinputtext"
+      }
+    }
+  }
+}

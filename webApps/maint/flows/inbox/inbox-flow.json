@@ -1,0 +1,8 @@
+{
+  "id": "inbox",
+  "description": "Approve or reject requests waiting for a role",
+  "defaultPage": "approval-inbox",
+  "services": {},
+  "types": {},
+  "variables": {}
+}

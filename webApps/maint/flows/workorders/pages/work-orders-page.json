@@ -1,0 +1,57 @@
+{
+  "title": "Work orders",
+  "description": "Board of work orders created from approved requests: Scheduled, In progress and Completed",
+  "variables": {
+    "board": {
+      "type": "object[]",
+      "defaultValue": []
+    },
+    "stats": {
+      "type": "object",
+      "defaultValue": {
+        "scheduled": 0,
+        "inProgress": 0,
+        "completed": 0,
+        "completedThisWeek": 0
+      }
+    }
+  },
+  "metadata": {},
+  "types": {},
+  "eventListeners": {
+    "vbEnter": {
+      "chains": [
+        {
+          "chain": "loadWorkOrdersChain"
+        }
+      ]
+    },
+    "advance": {
+      "chains": [
+        {
+          "chain": "advanceChain",
+          "parameters": {
+            "id": "{{ $current.data.id }}"
+          }
+        }
+      ]
+    },
+    "viewInbox": {
+      "chains": [
+        {
+          "chain": "goToChain",
+          "parameters": {
+            "flow": "inbox"
+          }
+        }
+      ]
+    }
+  },
+  "imports": {
+    "components": {
+      "oj-button": {
+        "path": "ojs/ojbutton"
+      }
+    }
+  }
+}

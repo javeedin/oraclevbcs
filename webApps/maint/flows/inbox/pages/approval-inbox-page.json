@@ -1,0 +1,120 @@
+{
+  "title": "Approval inbox",
+  "description": "Requests waiting for a decision, per approver role. Approve moves a request to its next step or creates the work order; reject needs a reason.",
+  "variables": {
+    "role": {
+      "type": "string",
+      "defaultValue": "supervisor",
+      "persisted": "history"
+    },
+    "roleTabs": {
+      "type": "object[]",
+      "defaultValue": []
+    },
+    "items": {
+      "type": "object[]",
+      "defaultValue": []
+    },
+    "rejectId": {
+      "type": "string",
+      "defaultValue": ""
+    },
+    "rejectTitle": {
+      "type": "string",
+      "defaultValue": ""
+    },
+    "rejectComment": {
+      "type": "string",
+      "defaultValue": ""
+    },
+    "rejectError": {
+      "type": "string",
+      "defaultValue": ""
+    }
+  },
+  "metadata": {},
+  "types": {},
+  "eventListeners": {
+    "vbEnter": {
+      "chains": [
+        {
+          "chain": "loadInboxChain"
+        }
+      ]
+    },
+    "roleClick": {
+      "chains": [
+        {
+          "chain": "loadInboxChain",
+          "parameters": {
+            "roleId": "{{ $current.data.id }}"
+          }
+        }
+      ]
+    },
+    "approve": {
+      "chains": [
+        {
+          "chain": "decideChain",
+          "parameters": {
+            "id": "{{ $current.data.id }}",
+            "approve": true
+          }
+        }
+      ]
+    },
+    "reject": {
+      "chains": [
+        {
+          "chain": "openRejectChain",
+          "parameters": {
+            "id": "{{ $current.data.id }}",
+            "title": "{{ $current.data.title }}"
+          }
+        }
+      ]
+    },
+    "confirmReject": {
+      "chains": [
+        {
+          "chain": "decideChain",
+          "parameters": {
+            "id": "{{ $variables.rejectId }}",
+            "approve": false,
+            "comment": "{{ $variables.rejectComment }}"
+          }
+        }
+      ]
+    },
+    "cancelReject": {
+      "chains": [
+        {
+          "chain": "closeRejectChain"
+        }
+      ]
+    },
+    "viewRequests": {
+      "chains": [
+        {
+          "chain": "goToChain",
+          "parameters": {
+            "flow": "requests"
+          }
+        }
+      ]
+    }
+  },
+  "imports": {
+    "components": {
+      "oj-button": {
+        "path": "ojs/ojbutton"
+      },
+      "oj-dialog": {
+        "path": "ojs/ojdialog"
+      },
+      "oj-text-area": {
+        "path": "ojs/ojinputtext"
+      }
+    }
+  }
+}

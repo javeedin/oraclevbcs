@@ -1,0 +1,202 @@
+{
+  "title": "My requests",
+  "description": "Maintenance requests with status chips, a table and a detail drawer showing the approval route and timeline",
+  "variables": {
+    "all": {
+      "type": "object[]",
+      "defaultValue": []
+    },
+    "requestsADP": {
+      "type": "vb/ArrayDataProvider2",
+      "defaultValue": {
+        "keyAttributes": "id",
+        "itemType": "RequestRowType"
+      }
+    },
+    "statusFilter": {
+      "type": "string",
+      "defaultValue": "All"
+    },
+    "scope": {
+      "type": "string",
+      "defaultValue": "all"
+    },
+    "statusChips": {
+      "type": "object[]",
+      "defaultValue": []
+    },
+    "shownCount": {
+      "type": "number",
+      "defaultValue": 0
+    },
+    "selected": {
+      "type": "object",
+      "defaultValue": {
+        "route": [],
+        "history": []
+      }
+    },
+    "detailOpen": {
+      "type": "boolean",
+      "defaultValue": false
+    },
+    "columns": {
+      "type": "object[]",
+      "defaultValue": [
+        {
+          "headerText": "Request",
+          "field": "id",
+          "template": "requestTemplate",
+          "sortable": "auto"
+        },
+        {
+          "headerText": "Equipment",
+          "field": "equipmentName",
+          "template": "equipmentTemplate",
+          "sortable": "auto"
+        },
+        {
+          "headerText": "Priority",
+          "field": "priority",
+          "template": "priorityTemplate",
+          "sortable": "auto"
+        },
+        {
+          "headerText": "Status",
+          "field": "status",
+          "template": "statusTemplate",
+          "sortable": "auto"
+        },
+        {
+          "headerText": "Raised",
+          "field": "requestedOn",
+          "template": "raisedTemplate",
+          "sortable": "auto"
+        },
+        {
+          "headerText": "Needed by",
+          "field": "neededBy",
+          "template": "neededTemplate",
+          "sortable": "auto"
+        },
+        {
+          "headerText": "Next step",
+          "field": "waitingFor",
+          "template": "nextTemplate",
+          "sortable": "disabled"
+        }
+      ]
+    }
+  },
+  "metadata": {},
+  "types": {
+    "RequestRowType": {
+      "id": "string",
+      "title": "string",
+      "equipmentName": "string",
+      "location": "string",
+      "priority": "string",
+      "status": "string",
+      "requestedBy": "string",
+      "requestedOn": "string",
+      "neededBy": "string",
+      "waitingFor": "string",
+      "workOrderId": "string"
+    }
+  },
+  "eventListeners": {
+    "vbEnter": {
+      "chains": [
+        {
+          "chain": "loadRequestsChain"
+        }
+      ]
+    },
+    "statusClick": {
+      "chains": [
+        {
+          "chain": "filterRequestsChain",
+          "parameters": {
+            "status": "{{ $current.data.key }}"
+          }
+        }
+      ]
+    },
+    "scopeChanged": {
+      "chains": [
+        {
+          "chain": "filterRequestsChain",
+          "parameters": {
+            "scope": "{{ $event.detail.value }}"
+          }
+        }
+      ]
+    },
+    "openRequest": {
+      "chains": [
+        {
+          "chain": "openRequestChain",
+          "parameters": {
+            "id": "{{ $current.row.id }}"
+          }
+        }
+      ]
+    },
+    "closeDetail": {
+      "chains": [
+        {
+          "chain": "closeDetailChain"
+        }
+      ]
+    },
+    "sendSelected": {
+      "chains": [
+        {
+          "chain": "sendNowChain",
+          "parameters": {
+            "id": "{{ $variables.selected.id }}"
+          }
+        }
+      ]
+    },
+    "newRequest": {
+      "chains": [
+        {
+          "chain": "goToChain",
+          "parameters": {
+            "flow": "request"
+          }
+        }
+      ]
+    },
+    "openWorkOrders": {
+      "chains": [
+        {
+          "chain": "goToChain",
+          "parameters": {
+            "flow": "workorders"
+          }
+        }
+      ]
+    }
+  },
+  "imports": {
+    "components": {
+      "oj-button": {
+        "path": "ojs/ojbutton"
+      },
+      "oj-buttonset-one": {
+        "path": "ojs/ojbutton"
+      },
+      "oj-option": {
+        "path": "ojs/ojoption"
+      },
+      "oj-table": {
+        "path": "ojs/ojtable"
+      },
+      "oj-drawer-popup": {
+        "path": "ojs/ojdrawerpopup"
+      }
+    }
+  }
+}

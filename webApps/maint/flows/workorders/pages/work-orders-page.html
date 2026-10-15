@@ -1,0 +1,76 @@
+<div class="mx-page">
+
+  <header class="mx-page-head mx-page-head--row">
+    <div>
+      <p class="mx-crumb">Approvals and work <span aria-hidden="true">/</span> Work orders</p>
+      <h1 class="mx-page-title">Work orders</h1>
+      <p class="mx-page-sub">
+        <oj-bind-text value="[[ $variables.stats.inProgress + ' in progress · ' + $variables.stats.scheduled + ' scheduled · ' + $variables.stats.completedThisWeek + ' completed in the last 7 days' ]]"></oj-bind-text>
+      </p>
+    </div>
+    <oj-button chroming="outlined" on-oj-action="[[$listeners.viewInbox]]">Approval inbox</oj-button>
+  </header>
+
+  <p class="mx-field-help mx-board-hint">A work order is created automatically when a request gets its last approval. Start it, then mark it complete to put the equipment back in service.</p>
+
+  <div class="mx-board">
+    <oj-bind-for-each data="[[ $variables.board ]]">
+      <template>
+        <section :class="[[ 'mx-lane is-' + $current.data.tone ]]" :aria-label="[[ $current.data.title ]]">
+          <header class="mx-lane-head">
+            <span class="mx-lane-dot" aria-hidden="true"></span>
+            <h2 class="mx-lane-title"><oj-bind-text value="[[ $current.data.title ]]"></oj-bind-text></h2>
+            <span class="mx-chip-count"><oj-bind-text value="[[ $current.data.count ]]"></oj-bind-text></span>
+          </header>
+          <p class="mx-lane-note"><oj-bind-text value="[[ $current.data.note ]]"></oj-bind-text></p>
+
+          <div class="mx-lane-body">
+            <oj-bind-for-each data="[[ $current.data.items ]]">
+              <template>
+                <article :class="[[ 'mx-wo is-' + $application.functions.priorityTone($current.data.priority) ]]">
+                  <div class="mx-wo-top">
+                    <span class="mx-recent-id"><oj-bind-text value="[[ $current.data.id ]]"></oj-bind-text></span>
+                    <span :class="[[ 'mx-pri is-' + $application.functions.priorityTone($current.data.priority) ]]"><oj-bind-text value="[[ $current.data.priority ]]"></oj-bind-text></span>
+                  </div>
+                  <h3 class="mx-wo-title"><oj-bind-text value="[[ $current.data.title ]]"></oj-bind-text></h3>
+                  <p class="mx-muted"><oj-bind-text value="[[ $current.data.equipmentName + ' · ' + $current.data.location ]]"></oj-bind-text></p>
+                  <div class="mx-wo-meta">
+                    <span class="mx-initials mx-initials--sm" aria-hidden="true"><oj-bind-text value="[[ $application.functions.initials($current.data.technician) ]]"></oj-bind-text></span>
+                    <span class="mx-wo-tech"><oj-bind-text value="[[ $current.data.technician ]]"></oj-bind-text></span>
+                    <span class="mx-spacer"></span>
+                    <span class="mx-muted"><oj-bind-text value="[[ $current.data.whenLine ]]"></oj-bind-text></span>
+                  </div>
+                  <oj-bind-if test="[[ $current.data.status === 'In progress' ]]">
+                    <div class="mx-health mx-health--wide">
+                      <span class="mx-health-label">Progress</span>
+                      <span class="mx-meter" aria-hidden="true"><span class="mx-meter-fill is-info" :style.width="[[ $current.data.progress + '%' ]]"></span></span>
+                      <span class="mx-health-pct"><oj-bind-text value="[[ $current.data.progress + '%' ]]"></oj-bind-text></span>
+                    </div>
+                  </oj-bind-if>
+                  <div class="mx-wo-foot">
+                    <span class="mx-muted"><oj-bind-text value="[[ 'From ' + $current.data.requestId ]]"></oj-bind-text></span>
+                    <oj-bind-if test="[[ $current.data.status === 'Scheduled' ]]">
+                      <oj-button chroming="outlined" on-oj-action="[[$listeners.advance]]">Start work</oj-button>
+                    </oj-bind-if>
+                    <oj-bind-if test="[[ $current.data.status === 'In progress' ]]">
+                      <oj-button chroming="callToAction" on-oj-action="[[$listeners.advance]]">Mark complete</oj-button>
+                    </oj-bind-if>
+                    <oj-bind-if test="[[ $current.data.status === 'Completed' ]]">
+                      <span class="mx-done-tag">
+                        <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12.5l4.5 4.5L19 7.5"></path></svg>
+                        Done
+                      </span>
+                    </oj-bind-if>
+                  </div>
+                </article>
+              </template>
+            </oj-bind-for-each>
+            <oj-bind-if test="[[ $current.data.items.length === 0 ]]">
+              <p class="mx-empty-line">Nothing here.</p>
+            </oj-bind-if>
+          </div>
+        </section>
+      </template>
+    </oj-bind-for-each>
+  </div>
+</div>

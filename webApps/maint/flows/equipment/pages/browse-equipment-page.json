@@ -1,0 +1,246 @@
+{
+  "title": "Browse equipment",
+  "description": "Equipment catalogue: search, category and status filters, card or table view, and a detail drawer with history",
+  "variables": {
+    "all": {
+      "type": "object[]",
+      "defaultValue": []
+    },
+    "shown": {
+      "type": "object[]",
+      "defaultValue": []
+    },
+    "tableADP": {
+      "type": "vb/ArrayDataProvider2",
+      "defaultValue": {
+        "keyAttributes": "id",
+        "itemType": "EquipmentRowType"
+      }
+    },
+    "search": {
+      "type": "string",
+      "defaultValue": ""
+    },
+    "searchText": {
+      "type": "string",
+      "defaultValue": ""
+    },
+    "category": {
+      "type": "string",
+      "defaultValue": "All"
+    },
+    "status": {
+      "type": "string",
+      "defaultValue": "all"
+    },
+    "view": {
+      "type": "string",
+      "defaultValue": "cards",
+      "persisted": "history"
+    },
+    "categoryChips": {
+      "type": "object[]",
+      "defaultValue": []
+    },
+    "stats": {
+      "type": "object",
+      "defaultValue": {
+        "total": 0,
+        "running": 0,
+        "maintenance": 0,
+        "down": 0
+      }
+    },
+    "selected": {
+      "type": "object",
+      "defaultValue": {}
+    },
+    "history": {
+      "type": "object[]",
+      "defaultValue": []
+    },
+    "detailOpen": {
+      "type": "boolean",
+      "defaultValue": false
+    },
+    "columns": {
+      "type": "object[]",
+      "defaultValue": [
+        {
+          "headerText": "Asset",
+          "field": "name",
+          "template": "assetTemplate",
+          "sortable": "auto"
+        },
+        {
+          "headerText": "Category",
+          "field": "category",
+          "sortable": "auto"
+        },
+        {
+          "headerText": "Location",
+          "field": "location",
+          "sortable": "auto"
+        },
+        {
+          "headerText": "Status",
+          "field": "status",
+          "template": "statusTemplate",
+          "sortable": "auto"
+        },
+        {
+          "headerText": "Health",
+          "field": "health",
+          "template": "healthTemplate",
+          "sortable": "auto"
+        },
+        {
+          "headerText": "Next PM",
+          "field": "nextPm",
+          "template": "pmTemplate",
+          "sortable": "auto"
+        },
+        {
+          "headerText": "",
+          "field": "id",
+          "template": "actionTemplate",
+          "sortable": "disabled",
+          "className": "oj-helper-text-align-end"
+        }
+      ]
+    }
+  },
+  "metadata": {},
+  "types": {
+    "EquipmentRowType": {
+      "id": "string",
+      "name": "string",
+      "category": "string",
+      "location": "string",
+      "status": "string",
+      "health": "number",
+      "nextPm": "string",
+      "pmState": "string",
+      "criticality": "string",
+      "openRequests": "number"
+    }
+  },
+  "eventListeners": {
+    "vbEnter": {
+      "chains": [
+        {
+          "chain": "loadEquipmentChain"
+        }
+      ]
+    },
+    "searchChanged": {
+      "chains": [
+        {
+          "chain": "filterEquipmentChain",
+          "parameters": {
+            "text": "{{ $event.detail.value }}"
+          }
+        }
+      ]
+    },
+    "categoryClick": {
+      "chains": [
+        {
+          "chain": "filterEquipmentChain",
+          "parameters": {
+            "category": "{{ $current.data.key }}"
+          }
+        }
+      ]
+    },
+    "statusChanged": {
+      "chains": [
+        {
+          "chain": "filterEquipmentChain",
+          "parameters": {
+            "status": "{{ $event.detail.value }}"
+          }
+        }
+      ]
+    },
+    "clearFilters": {
+      "chains": [
+        {
+          "chain": "filterEquipmentChain",
+          "parameters": {
+            "reset": true
+          }
+        }
+      ]
+    },
+    "openCard": {
+      "chains": [
+        {
+          "chain": "openEquipmentChain",
+          "parameters": {
+            "id": "{{ $current.data.id }}"
+          }
+        }
+      ]
+    },
+    "openRow": {
+      "chains": [
+        {
+          "chain": "openEquipmentChain",
+          "parameters": {
+            "id": "{{ $current.row.id }}"
+          }
+        }
+      ]
+    },
+    "raiseFromCard": {
+      "chains": [
+        {
+          "chain": "raiseForEquipmentChain",
+          "parameters": {
+            "id": "{{ $current.data.id }}"
+          }
+        }
+      ]
+    },
+    "raiseFromDetail": {
+      "chains": [
+        {
+          "chain": "raiseForEquipmentChain",
+          "parameters": {
+            "id": "{{ $variables.selected.id }}"
+          }
+        }
+      ]
+    },
+    "closeDetail": {
+      "chains": [
+        {
+          "chain": "closeDetailChain"
+        }
+      ]
+    }
+  },
+  "imports": {
+    "components": {
+      "oj-button": {
+        "path": "ojs/ojbutton"
+      },
+      "oj-buttonset-one": {
+        "path": "ojs/ojbutton"
+      },
+      "oj-option": {
+        "path": "ojs/ojoption"
+      },
+      "oj-input-text": {
+        "path": "ojs/ojinputtext"
+      },
+      "oj-table": {
+        "path": "ojs/ojtable"
+      },
+      "oj-drawer-popup": {
+        "path": "ojs/ojdrawerpopup"
+      }
+    }
+  }
+}

@@ -1,0 +1,8 @@
+{
+  "id": "requests",
+  "description": "Requests list with detail drawer",
+  "defaultPage": "my-requests",
+  "services": {},
+  "types": {},
+  "variables": {}
+}
