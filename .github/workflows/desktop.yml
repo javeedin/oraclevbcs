@@ -7,8 +7,11 @@
 #     a GitHub release: the app's "Download desktop app" button and the installed apps' automatic
 #     updates both use the latest release.
 #
-# Release a new version: bump "version" in desktop/package.json, commit, then
-#   git tag v<version> && git push origin v<version>
+# Release a version (the header's "Download desktop app" button takes the latest release):
+#   - git tag v<version> && git push origin v<version>; or
+#   - Actions > Desktop app > Run workflow, tick "Publish a release" (GitHub shows this button once
+#     this file is also on the default branch, main);
+# where <version> is "version" in desktop/package.json (bump it for each new release).
 name: Desktop app
 
 on:
@@ -24,6 +27,11 @@ on:
       - 'Gruntfile.js'
       - '.github/workflows/desktop.yml'
   workflow_dispatch:
+    inputs:
+      release:
+        description: 'Publish a release v<desktop/package.json version> from this branch'
+        type: boolean
+        default: false
 
 permissions:
   contents: write
@@ -104,11 +112,23 @@ jobs:
         working-directory: desktop
         run: node scripts/ci-step.js "Install the desktop client (Windows)" -- npm ci --no-audit --no-fund
 
-      - name: Package the installer (published as a release on a v* tag)
+      - name: Tag this commit for the release (manual run with "Publish a release")
+        if: github.event_name == 'workflow_dispatch' && inputs.release
+        shell: bash
+        run: |
+          v="v$(node -p "require('./desktop/package.json').version")"
+          if git ls-remote --exit-code --tags origin "refs/tags/$v" > /dev/null; then
+            echo "::error title=Release exists::Tag $v already exists. Bump version in desktop/package.json first."
+            exit 1
+          fi
+          git tag "$v" "$GITHUB_SHA"
+          git push origin "refs/tags/$v"
+
+      - name: Package the installer (published as a release on a v* tag or a manual release run)
         working-directory: desktop
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: node scripts/ci-step.js "Package the Windows installer" -- npx electron-builder --win --publish ${{ startsWith(github.ref, 'refs/tags/v') && 'always' || 'never' }}
+        run: node scripts/ci-step.js "Package the Windows installer" -- npx electron-builder --win --publish ${{ (startsWith(github.ref, 'refs/tags/v') || (github.event_name == 'workflow_dispatch' && inputs.release)) && 'always' || 'never' }}
 
       - uses: actions/upload-artifact@v4
         with:
