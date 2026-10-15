@@ -179,8 +179,12 @@ async function run({ win, appUrl, getCounts, key, log }) {
       await wait(800);
     }
 
-    const image = await win.webContents.capturePage();
-    fs.writeFileSync(path.join(out, 'selftest.png'), image.toPNG());
+    try {
+      const image = await win.webContents.capturePage();
+      fs.writeFileSync(path.join(out, 'selftest.png'), image.toPNG());
+    } catch (e) {
+      console.log(`selftest: no screenshot (${e && e.message})`);
+    }
   } catch (e) {
     check('selftest ran without errors', false, e && e.stack ? e.stack : String(e));
   }

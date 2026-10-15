@@ -202,19 +202,34 @@ async function main() {
     if (left.length) {
       fail(`index.html from vb-serve still contains ${left.join(' and ')}.`);
     }
+    // %{env.*}% values a VB server fills in. The desktop app's server answers _currentuser itself
+    // (anonymous, as the app needs no sign-in); anything else is reported and left as it is.
+    const KNOWN = { 'env.userProfileUrl': '_currentuser' };
     const placeholders = [];
     const scan = (dir) =>
       fs.readdirSync(dir, { withFileTypes: true }).forEach((e) => {
         const full = path.join(dir, e.name);
         if (e.isDirectory()) {
           scan(full);
-        } else if (/\.(html|json|js)$/.test(e.name) && fs.readFileSync(full, 'utf8').includes('%{env.')) {
-          placeholders.push(path.relative(dest, full));
+          return;
         }
+        if (!/\.(html|json|js)$/.test(e.name)) {
+          return;
+        }
+        const text = fs.readFileSync(full, 'utf8');
+        if (!text.includes('%{env.')) {
+          return;
+        }
+        const fixed = text.replace(/%\{(env\.[\w.]+)\}%/g, (m, name) => (name in KNOWN ? KNOWN[name] : m));
+        if (fixed !== text) {
+          fs.writeFileSync(full, fixed, 'utf8');
+        }
+        const leftover = [...new Set(fixed.match(/%\{env\.[\w.]+\}%/g) || [])];
+        placeholders.push(`${path.relative(dest, full)}${leftover.length ? ` (left: ${leftover.join(' ')})` : ' (filled in)'}`);
       });
     scan(dest);
     if (placeholders.length) {
-      console.warn(`build-app: %{env.*}% placeholders left in ${placeholders.join(', ')}`);
+      console.log(`build-app: %{env.*}% placeholders in ${placeholders.join(', ')}`);
     }
 
     let total = 0;
@@ -230,7 +245,7 @@ async function main() {
       const summary = [
         `${total} files: ${served} from vb-serve, ${copied} copied as they are`,
         `added: ${added.join(', ') || 'none'}`,
-        `placeholders left: ${placeholders.join(', ') || 'none'}`,
+        `placeholders: ${placeholders.join(', ') || 'none'}`,
         `top level: ${fs.readdirSync(dest).join(', ')}`,
         `version tokens in index.html: ${[...new Set(index.match(/version_\d+/g) || [])].join(', ') || 'none'}`,
       ];
