@@ -1247,7 +1247,7 @@ define(['oj-sp/spectra-shell/config/config'], () => {
 
     return {
       history: messages,
-      text: [answer || 'No answer text came back.', note ? `_${note}_` : ''].filter(Boolean).join('\n\n'),
+      text: [answer || 'No answer text came back.', note ? `*${note}*` : ''].filter(Boolean).join('\n\n'),
       tools: used,
       changed,
       model: settings.model,
@@ -1262,13 +1262,14 @@ define(['oj-sp/spectra-shell/config/config'], () => {
     return String(text || '')
       .replace(/\[([^\]]+)\]\(([^)]+)\)/g, '$1 ($2)')
       .replace(/\*\*([^*]+)\*\*/g, '$1')
+      .replace(/\*([^*\s][^*]*)\*/g, '$1')
       .replace(/`([^`]+)`/g, '$1');
   }
 
   function apInline(text) {
     const source = String(text || '').replace(/\[([^\]]+)\]\(([^)]+)\)/g, '$1 ($2)');
     const segments = [];
-    const re = /(\*\*[^*]+\*\*|`[^`]+`)/g;
+    const re = /(\*\*[^*]+\*\*|`[^`]+`|\*[^*\s][^*]*\*)/g;
     let last = 0;
     let m = re.exec(source);
     while (m) {
@@ -1276,11 +1277,15 @@ define(['oj-sp/spectra-shell/config/config'], () => {
         segments.push({ id: `s${segments.length}`, text: source.slice(last, m.index), cls: '' });
       }
       const token = m[0];
-      segments.push(
-        token.startsWith('**')
-          ? { id: `s${segments.length}`, text: token.slice(2, -2), cls: 'mx-ap-b' }
-          : { id: `s${segments.length}`, text: token.slice(1, -1), cls: 'mx-ap-code' },
-      );
+      let seg;
+      if (token.startsWith('**')) {
+        seg = { text: token.slice(2, -2), cls: 'mx-ap-b' };
+      } else if (token.startsWith('`')) {
+        seg = { text: token.slice(1, -1), cls: 'mx-ap-code' };
+      } else {
+        seg = { text: token.slice(1, -1), cls: 'mx-ap-i' };
+      }
+      segments.push(Object.assign({ id: `s${segments.length}` }, seg));
       last = m.index + token.length;
       m = re.exec(source);
     }

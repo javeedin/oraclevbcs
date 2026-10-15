@@ -25,7 +25,9 @@ webApps/maint/
                                    autopilotSettings, newChat
   flows/<flow>/<flow>-flow.json    one flow per navigation item
   flows/<flow>/pages/<page>-page.{json,html,js} and <page>-page-chains/
-  resources/css/app.css            layout inside the templates only: mx- prefix, --oj-core-* variables
+  resources/css/app.css            typeface (--oj-html-font-family: Oracle Sans, then bundled Inter) and
+                                   layout inside the templates: mx- prefix, --oj-core-* variables
+  resources/fonts/                 Inter variable woff2 (OFL) used when Oracle Sans is not installed
 ```
 
 | Navigation item | Flow | Pages (default first) | Redwood template |
@@ -71,6 +73,9 @@ User feedback: keep Home and Dashboard compact (no big cards, small charts ~12re
 10. **Styling:** Redwood first (`oj-badge`, `oj-panel`, `oj-typography-*`, `oj-text-color-*`,
     `oj-flex`); `app.css` only for layout, with the `mx-` prefix and `--oj-core-*` variables.
     Status badges come from `badgeClass`, `priorityBadgeClass`, `equipmentBadgeClass` in app-flow.js.
+    Typography: change fonts and weights through Redwood's variables (`--oj-html-font-family`,
+    `--oj-typography-*`, `--oj-badge-*`), not by restyling components. User wants a refined look:
+    weights 500-650 rather than 700+, tabular numbers for figures.
 11. **Auto Pilot** calls the Claude Messages API from the browser (`x-api-key`, `anthropic-version: 2023-06-01`,
     `anthropic-dangerous-direct-browser-access: true`). Tools are defined in `AP_TOOLS` and run in
     `apRunTool` against the store; only `create_draft_request` writes, and only drafts. Answers render

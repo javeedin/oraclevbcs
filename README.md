@@ -25,6 +25,12 @@ The shell is the same as VB's Redwood starter: `oj-sp-pillar-theme` around every
 **`oj-sp-in-app-navigation`** to move between the six areas. The header has **Auto Pilot** and
 **Settings**.
 
+**Typeface:** Redwood's own typeface is Oracle Sans, which Oracle doesn't publish for download. The
+app uses it when it's installed on the computer; otherwise it uses **Inter** (bundled in
+`resources/fonts`, SIL Open Font License), a close and very legible match. It's set through
+`--oj-html-font-family`, the variable Oracle documents for changing the Redwood font, with
+Redwood's heading weights eased a step and tabular numbers in tables, counters and badges.
+
 ### Workflow view
 
 Open any request and switch the drawer to **Workflow** (or click **Workflow** next to a request ID,
@@ -139,7 +145,8 @@ webApps/maint/
   flows/equipment/                browse-equipment page
   flows/inbox/                    approval-inbox page
   flows/workorders/               work-orders page
-  resources/css/app.css           layout inside the templates (mx- classes, Redwood variables)
+  resources/css/app.css           typeface + layout inside the templates (mx- classes, Redwood variables)
+  resources/fonts/                Inter variable font (latin, latin-ext) and its licence
 ```
 
 Each page is `<name>-page.json` (variables, listeners, component imports), `<name>-page.html`,
