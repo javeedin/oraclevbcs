@@ -1,0 +1,16 @@
+{
+    "vbcs.dt.version": "20250610-25.10.3",
+    "features": {
+        "codeChainsEnabled": true
+    },
+    "dependencies": {
+        "upgrade": "micro",
+        "paths": {
+            "jet": "https://static.oracle.com/cdn/jet/18.1.4",
+            "telemetry": "https://static.oracle.com/cdn/trace/10.2.2",
+            "visualRuntime": "https://static.oracle.com/cdn/vb/2510.1.0",
+            "oracleImageGallery": "https://static.oracle.com/cdn/fnd/gallery/2510.0.1"
+        }
+    },
+    "source.version": "2510"
+}

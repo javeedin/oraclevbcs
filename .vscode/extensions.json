@@ -1,0 +1,31 @@
+{
+  // VS Code shows these as "Recommended" the first time you open the folder.
+  // Install them all from the Extensions view: filter by "@recommended".
+  "recommendations": [
+    // Oracle JET: autocomplete, hover docs and snippets for oj-* tags, plus JET audit
+    "Oracle.oracle-jet-core",
+
+    // AI pair programmer that understands the whole repo (reads CLAUDE.md in this folder)
+    "Anthropic.claude-code",
+
+    // Oracle Database / ORDS work: SQL worksheets, PL/SQL, connections
+    "Oracle.sql-developer",
+
+    // Call VB, ORDS and Fusion REST APIs from .http files (see api-tests/)
+    "humao.rest-client",
+
+    // VB Studio build jobs and pipelines can be defined in YAML
+    "redhat.vscode-yaml",
+
+    // Formatting and linting for page modules and action chains
+    "esbenp.prettier-vscode",
+    "dbaeumer.vscode-eslint",
+
+    // Inline errors, Git history per line
+    "usernamehw.errorlens",
+    "eamodio.gitlens",
+
+    // Autocomplete for the --gl-* design tokens in app.css
+    "vunguyentuan.vscode-css-variables"
+  ]
+}

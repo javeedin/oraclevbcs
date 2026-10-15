@@ -1,0 +1,540 @@
+{
+  "title": "Fusion SQL",
+  "description": "SQL editor that runs SELECT statements on Oracle Fusion through the BI Publisher runReport SOAP service, with a results grid, history, a table browser and Claude to write or fix queries.",
+  "variables": {
+    "sql": {
+      "type": "string",
+      "defaultValue": ""
+    },
+    "maxRows": {
+      "type": "number",
+      "defaultValue": 500
+    },
+    "running": {
+      "type": "boolean",
+      "defaultValue": false
+    },
+    "columns": {
+      "type": "any",
+      "defaultValue": []
+    },
+    "tableADP": {
+      "type": "any",
+      "defaultValue": null
+    },
+    "resultCols": {
+      "type": "any",
+      "defaultValue": []
+    },
+    "resultRows": {
+      "type": "any",
+      "defaultValue": []
+    },
+    "result": {
+      "type": "object",
+      "defaultValue": {
+        "ran": false,
+        "rows": 0,
+        "shown": 0,
+        "ms": 0,
+        "truncated": false,
+        "maxRows": 0,
+        "scope": "",
+        "summary": "",
+        "warnings": []
+      }
+    },
+    "filterText": {
+      "type": "string",
+      "defaultValue": ""
+    },
+    "error": {
+      "type": "object",
+      "defaultValue": {
+        "show": false,
+        "message": "",
+        "sql": ""
+      }
+    },
+    "panel": {
+      "type": "string",
+      "defaultValue": ""
+    },
+    "history": {
+      "type": "object[]",
+      "defaultValue": []
+    },
+    "starters": {
+      "type": "object[]",
+      "defaultValue": []
+    },
+    "tableSearch": {
+      "type": "string",
+      "defaultValue": ""
+    },
+    "tablesBusy": {
+      "type": "boolean",
+      "defaultValue": false
+    },
+    "tables": {
+      "type": "object[]",
+      "defaultValue": []
+    },
+    "tablesNote": {
+      "type": "string",
+      "defaultValue": ""
+    },
+    "described": {
+      "type": "any",
+      "defaultValue": null
+    },
+    "claudeTables": {
+      "type": "any",
+      "defaultValue": []
+    },
+    "ask": {
+      "type": "string",
+      "defaultValue": ""
+    },
+    "askBusy": {
+      "type": "boolean",
+      "defaultValue": false
+    },
+    "askNote": {
+      "type": "string",
+      "defaultValue": ""
+    },
+    "connection": {
+      "type": "string",
+      "defaultValue": ""
+    },
+    "settingsForm": {
+      "type": "object",
+      "defaultValue": {
+        "transport": "service",
+        "endpointId": "",
+        "directUrl": "",
+        "reportPath": "",
+        "sqlParam": "",
+        "maxRowsParam": "",
+        "limitMode": "report",
+        "maxRows": 500,
+        "timeoutSec": 120
+      }
+    },
+    "settingsStatus": {
+      "type": "string",
+      "defaultValue": ""
+    },
+    "settingsOk": {
+      "type": "boolean",
+      "defaultValue": false
+    },
+    "testing": {
+      "type": "boolean",
+      "defaultValue": false
+    },
+    "claude": {
+      "type": "object",
+      "defaultValue": {
+        "hasKey": false,
+        "keyHint": "",
+        "model": "",
+        "modelLabel": "",
+        "remember": true
+      }
+    },
+    "claudeForm": {
+      "type": "object",
+      "defaultValue": {
+        "apiKey": "",
+        "model": "claude-sonnet-5-5",
+        "remember": true
+      }
+    },
+    "modelsADP": {
+      "type": "vb/ArrayDataProvider2",
+      "defaultValue": {
+        "keyAttributes": "value",
+        "itemType": "optionType"
+      }
+    },
+    "messages": {
+      "type": "object[]",
+      "defaultValue": []
+    }
+  },
+  "metadata": {},
+  "types": {
+    "optionType": {
+      "value": "string",
+      "label": "string"
+    }
+  },
+  "eventListeners": {
+    "vbEnter": {
+      "chains": [
+        {
+          "chain": "initPageChain"
+        }
+      ]
+    },
+    "runClick": {
+      "chains": [
+        {
+          "chain": "runChain"
+        }
+      ]
+    },
+    "editorKeydown": {
+      "chains": [
+        {
+          "chain": "runChain",
+          "parameters": {
+            "key": "{{ $event.key }}",
+            "ctrl": "{{ $event.ctrlKey || $event.metaKey }}"
+          }
+        }
+      ]
+    },
+    "historyRun": {
+      "chains": [
+        {
+          "chain": "runChain",
+          "parameters": {
+            "sql": "{{ $current.data.sql }}",
+            "load": true
+          }
+        }
+      ]
+    },
+    "filterChanged": {
+      "chains": [
+        {
+          "chain": "filterChain",
+          "parameters": {
+            "text": "{{ $event.detail.value }}"
+          }
+        }
+      ]
+    },
+    "exportCsv": {
+      "chains": [
+        {
+          "chain": "exportChain",
+          "parameters": {
+            "format": "csv"
+          }
+        }
+      ]
+    },
+    "copyResults": {
+      "chains": [
+        {
+          "chain": "exportChain",
+          "parameters": {
+            "format": "tsv"
+          }
+        }
+      ]
+    },
+    "showHistory": {
+      "chains": [
+        {
+          "chain": "panelChain",
+          "parameters": {
+            "panel": "history"
+          }
+        }
+      ]
+    },
+    "showTables": {
+      "chains": [
+        {
+          "chain": "panelChain",
+          "parameters": {
+            "panel": "tables"
+          }
+        }
+      ]
+    },
+    "closePanel": {
+      "chains": [
+        {
+          "chain": "panelChain",
+          "parameters": {
+            "panel": ""
+          }
+        }
+      ]
+    },
+    "historyLoad": {
+      "chains": [
+        {
+          "chain": "historyChain",
+          "parameters": {
+            "action": "load",
+            "id": "{{ $current.data.id }}"
+          }
+        }
+      ]
+    },
+    "historyClear": {
+      "chains": [
+        {
+          "chain": "historyChain",
+          "parameters": {
+            "action": "clear"
+          }
+        }
+      ]
+    },
+    "tablesSearch": {
+      "chains": [
+        {
+          "chain": "tablesChain",
+          "parameters": {
+            "action": "search",
+            "text": "{{ $event.detail.value }}"
+          }
+        }
+      ]
+    },
+    "tablesSearchClick": {
+      "chains": [
+        {
+          "chain": "tablesChain",
+          "parameters": {
+            "action": "search"
+          }
+        }
+      ]
+    },
+    "tableOpen": {
+      "chains": [
+        {
+          "chain": "tablesChain",
+          "parameters": {
+            "action": "describe",
+            "owner": "{{ $current.data.owner }}",
+            "name": "{{ $current.data.name }}"
+          }
+        }
+      ]
+    },
+    "tableInsert": {
+      "chains": [
+        {
+          "chain": "tablesChain",
+          "parameters": {
+            "action": "insert"
+          }
+        }
+      ]
+    },
+    "tableBack": {
+      "chains": [
+        {
+          "chain": "tablesChain",
+          "parameters": {
+            "action": "back"
+          }
+        }
+      ]
+    },
+    "columnInsert": {
+      "chains": [
+        {
+          "chain": "tablesChain",
+          "parameters": {
+            "action": "column",
+            "column": "{{ $current.data.name }}"
+          }
+        }
+      ]
+    },
+    "askClick": {
+      "chains": [
+        {
+          "chain": "askChain",
+          "parameters": {
+            "mode": "write"
+          }
+        }
+      ]
+    },
+    "askKeydown": {
+      "chains": [
+        {
+          "chain": "askChain",
+          "parameters": {
+            "mode": "write",
+            "key": "{{ $event.key }}",
+            "shift": "{{ $event.shiftKey }}"
+          }
+        }
+      ]
+    },
+    "fixClick": {
+      "chains": [
+        {
+          "chain": "askChain",
+          "parameters": {
+            "mode": "fix"
+          }
+        }
+      ]
+    },
+    "starterClick": {
+      "chains": [
+        {
+          "chain": "editorChain",
+          "parameters": {
+            "action": "starter",
+            "id": "{{ $current.data.id }}"
+          }
+        }
+      ]
+    },
+    "clearClick": {
+      "chains": [
+        {
+          "chain": "editorChain",
+          "parameters": {
+            "action": "clear"
+          }
+        }
+      ]
+    },
+    "maxRowsChanged": {
+      "chains": [
+        {
+          "chain": "editorChain",
+          "parameters": {
+            "action": "maxRows",
+            "value": "{{ $event.detail.value }}"
+          }
+        }
+      ]
+    },
+    "openSettings": {
+      "chains": [
+        {
+          "chain": "settingsChain",
+          "parameters": {
+            "action": "open"
+          }
+        }
+      ]
+    },
+    "saveSettings": {
+      "chains": [
+        {
+          "chain": "settingsChain",
+          "parameters": {
+            "action": "save"
+          }
+        }
+      ]
+    },
+    "testConnection": {
+      "chains": [
+        {
+          "chain": "settingsChain",
+          "parameters": {
+            "action": "test"
+          }
+        }
+      ]
+    },
+    "testClaude": {
+      "chains": [
+        {
+          "chain": "settingsChain",
+          "parameters": {
+            "action": "testClaude"
+          }
+        }
+      ]
+    },
+    "removeKey": {
+      "chains": [
+        {
+          "chain": "settingsChain",
+          "parameters": {
+            "action": "removeKey"
+          }
+        }
+      ]
+    },
+    "resetSettings": {
+      "chains": [
+        {
+          "chain": "settingsChain",
+          "parameters": {
+            "action": "reset"
+          }
+        }
+      ]
+    },
+    "closeSettings": {
+      "chains": [
+        {
+          "chain": "settingsChain",
+          "parameters": {
+            "action": "close"
+          }
+        }
+      ]
+    }
+  },
+  "imports": {
+    "components": {
+      "oj-button": {
+        "path": "ojs/ojbutton"
+      },
+      "oj-text-area": {
+        "path": "ojs/ojinputtext"
+      },
+      "oj-input-text": {
+        "path": "ojs/ojinputtext"
+      },
+      "oj-input-password": {
+        "path": "ojs/ojinputtext"
+      },
+      "oj-input-number": {
+        "path": "ojs/ojinputnumber"
+      },
+      "oj-input-search": {
+        "path": "ojs/ojinputsearch"
+      },
+      "oj-table": {
+        "path": "ojs/ojtable"
+      },
+      "oj-dialog": {
+        "path": "ojs/ojdialog"
+      },
+      "oj-messages": {
+        "path": "ojs/ojmessages"
+      },
+      "oj-progress-bar": {
+        "path": "ojs/ojprogress-bar"
+      },
+      "oj-radioset": {
+        "path": "ojs/ojradioset"
+      },
+      "oj-option": {
+        "path": "ojs/ojoption"
+      },
+      "oj-select-single": {
+        "path": "ojs/ojselectsingle"
+      },
+      "oj-switch": {
+        "path": "ojs/ojswitch"
+      },
+      "oj-form-layout": {
+        "path": "ojs/ojformlayout"
+      }
+    }
+  }
+}

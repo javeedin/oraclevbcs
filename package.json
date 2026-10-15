@@ -1,0 +1,31 @@
+{
+    "name": "fusion-sql-vb",
+    "version": "1.0.0",
+    "description": "Fusion SQL - run SQL on Oracle Fusion through a BI Publisher runReport SOAP call, from an Oracle Visual Builder app",
+    "private": true,
+    "engines": {
+        "node": ">=20 <23"
+    },
+    "scripts": {
+        "build": "grunt vb-clean local-sources && grunt vb-process-local --git-sources=.local-src",
+        "serve": "npm run build && grunt vb-serve:webApps/fusionsql --port=8888 --open",
+        "proxy": "node tools/bip-dev-proxy.js",
+        "audit": "grunt vb-audit",
+        "package": "grunt vb-process-local vb-package",
+        "lint": "eslint \"webApps/**/*.js\" \"tools/**/*.js\"",
+        "test": "node tools/test/run-tests.js"
+    },
+    "devDependencies": {
+        "grunt": "^1.4.1",
+        "grunt-cli": "^1.4.3",
+        "load-grunt-tasks": "^5.1.0",
+        "@oracle/grunt-vb-build": "https://static.oracle.com/cdn/vb/tools/npm/grunt-vb-build/grunt-vb-build-2510.4.0.tar.gz",
+        "@oracle/grunt-vb-audit": "https://static.oracle.com/cdn/vb/tools/npm/grunt-vb-audit/grunt-vb-audit-2510.0.0.tar.gz",
+        "@xmldom/xmldom": "^0.9.0",
+        "eslint": "^9.0.0",
+        "globals": "^15.0.0"
+    },
+    "com_oracle_visual_builder": {
+        "upgrade": "micro"
+    }
+}

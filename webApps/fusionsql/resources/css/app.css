@@ -1,0 +1,456 @@
+/* Fusion SQL - layout only. Colors, type and spacing come from the Redwood theme (--oj-core-*). */
+
+.fq-app {
+  display: flex;
+  flex-direction: column;
+  min-height: 100vh;
+  background: var(--oj-core-bg-color-content);
+}
+
+/* ---------- Header ---------- */
+
+.fq-header {
+  display: flex;
+  align-items: center;
+  gap: var(--oj-core-spacing-3x);
+  padding: var(--oj-core-spacing-2x) var(--oj-core-spacing-4x);
+  border-bottom: 1px solid var(--oj-core-divider-color);
+}
+
+.fq-brand {
+  display: flex;
+  align-items: center;
+  gap: var(--oj-core-spacing-3x);
+  min-width: 0;
+  flex: 1 1 auto;
+}
+
+.fq-logo {
+  flex: 0 0 auto;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 2.25rem;
+  height: 2.25rem;
+  border-radius: var(--oj-core-border-radius-md);
+  background: var(--oj-core-text-color-brand);
+  color: var(--oj-core-bg-color-content);
+  font: 700 0.75rem/1 ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  letter-spacing: 0.04em;
+}
+
+.fq-brand-text {
+  min-width: 0;
+}
+
+.fq-title {
+  margin: 0;
+}
+
+.fq-connection {
+  margin: 0;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.fq-header-actions {
+  display: flex;
+  flex: 0 0 auto;
+  gap: var(--oj-core-spacing-1x);
+}
+
+/* ---------- Body: main column + optional side panel ---------- */
+
+.fq-body {
+  flex: 1 1 auto;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+}
+
+.fq-body--with-side {
+  grid-template-columns: minmax(0, 1fr) 22rem;
+}
+
+.fq-main {
+  min-width: 0;
+  padding: var(--oj-core-spacing-3x) var(--oj-core-spacing-4x) var(--oj-core-spacing-4x);
+  display: flex;
+  flex-direction: column;
+  gap: var(--oj-core-spacing-2x);
+}
+
+.fq-spacer {
+  flex: 1 1 auto;
+}
+
+.fq-grow {
+  flex: 1 1 auto;
+  min-width: 0;
+}
+
+/* ---------- Ask Claude ---------- */
+
+.fq-ask {
+  display: flex;
+  gap: var(--oj-core-spacing-2x);
+  align-items: center;
+}
+
+.fq-ask-input {
+  flex: 1 1 auto;
+  max-width: none;
+}
+
+.fq-ask-note {
+  margin: 0;
+  padding: var(--oj-core-spacing-1x) var(--oj-core-spacing-2x);
+  border-left: 3px solid var(--oj-core-info-3);
+  background: var(--oj-core-info-secondary-1);
+  border-radius: var(--oj-core-border-radius-md);
+}
+
+/* ---------- Editor ---------- */
+
+.fq-editor {
+  max-width: none;
+}
+
+.fq-editor textarea {
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, 'Liberation Mono', monospace;
+  font-size: 0.8125rem;
+  line-height: 1.5;
+  tab-size: 2;
+  white-space: pre;
+  overflow-wrap: normal;
+  overflow-x: auto;
+}
+
+.fq-toolbar {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: var(--oj-core-spacing-2x);
+}
+
+.fq-maxrows {
+  width: 9rem;
+}
+
+.fq-starters {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: var(--oj-core-spacing-1x);
+}
+
+.fq-chip {
+  border: 1px solid var(--oj-core-divider-color);
+  background: var(--oj-core-bg-color-content);
+  color: var(--oj-core-text-color-primary);
+  border-radius: 999px;
+  padding: 0.125rem 0.625rem;
+  font: inherit;
+  font-size: 0.75rem;
+  cursor: pointer;
+}
+
+.fq-chip:hover,
+.fq-chip:focus-visible {
+  border-color: var(--oj-core-text-color-brand);
+  color: var(--oj-core-text-color-brand);
+}
+
+.fq-progress {
+  width: 100%;
+}
+
+/* ---------- Error ---------- */
+
+.fq-error {
+  border: 1px solid var(--oj-core-danger-3);
+  background: var(--oj-core-danger-secondary-1);
+  border-radius: var(--oj-core-border-radius-md);
+  padding: var(--oj-core-spacing-2x) var(--oj-core-spacing-3x);
+}
+
+.fq-error-head {
+  display: flex;
+  align-items: center;
+  gap: var(--oj-core-spacing-2x);
+}
+
+.fq-error-text {
+  margin: var(--oj-core-spacing-1x) 0 0;
+  white-space: pre-wrap;
+  word-break: break-word;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  font-size: 0.8125rem;
+}
+
+/* ---------- Results ---------- */
+
+.fq-empty {
+  padding: var(--oj-core-spacing-4x);
+  border: 1px dashed var(--oj-core-divider-color);
+  border-radius: var(--oj-core-border-radius-lg);
+  text-align: center;
+}
+
+.fq-empty p {
+  margin: 0 0 var(--oj-core-spacing-1x);
+}
+
+.fq-results {
+  display: flex;
+  flex-direction: column;
+  gap: var(--oj-core-spacing-1x);
+  min-width: 0;
+}
+
+.fq-results-head {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: var(--oj-core-spacing-2x);
+}
+
+.fq-summary {
+  font-variant-numeric: tabular-nums;
+}
+
+.fq-filter {
+  width: 14rem;
+}
+
+.fq-warning {
+  margin: 0;
+  padding: var(--oj-core-spacing-1x) var(--oj-core-spacing-2x);
+  border-left: 3px solid var(--oj-core-warning-3);
+  background: var(--oj-core-warning-1);
+}
+
+.fq-norows {
+  margin: var(--oj-core-spacing-2x) 0;
+}
+
+/* The table scrolls inside a fixed height so it can load rows as you scroll. */
+.fq-table {
+  width: 100%;
+  height: min(62vh, 40rem);
+}
+
+.fq-cell {
+  display: inline-block;
+  max-width: 28rem;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  vertical-align: bottom;
+}
+
+.fq-null {
+  color: var(--oj-core-text-color-secondary);
+  font-style: italic;
+  font-size: 0.75rem;
+}
+
+.fq-num {
+  font-variant-numeric: tabular-nums;
+}
+
+.fq-rownum {
+  color: var(--oj-core-text-color-secondary);
+  font-variant-numeric: tabular-nums;
+}
+
+/* ---------- Side panel ---------- */
+
+.fq-side {
+  border-left: 1px solid var(--oj-core-divider-color);
+  padding: var(--oj-core-spacing-3x);
+  display: flex;
+  flex-direction: column;
+  gap: var(--oj-core-spacing-2x);
+  min-width: 0;
+  max-height: calc(100vh - 3.5rem);
+  overflow: auto;
+  position: sticky;
+  top: 0;
+}
+
+.fq-side-head {
+  display: flex;
+  align-items: center;
+  gap: var(--oj-core-spacing-1x);
+}
+
+.fq-side-head h2 {
+  margin: 0;
+}
+
+.fq-side-search {
+  display: flex;
+  gap: var(--oj-core-spacing-1x);
+  align-items: center;
+}
+
+.fq-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.fq-hist {
+  padding: var(--oj-core-spacing-2x);
+  border: 1px solid var(--oj-core-divider-color);
+  border-radius: var(--oj-core-border-radius-md);
+}
+
+.fq-hist-sql,
+.fq-table-item,
+.fq-col-item {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 2px;
+  width: 100%;
+  text-align: left;
+  border: 0;
+  background: none;
+  color: var(--oj-core-text-color-primary);
+  font: inherit;
+  cursor: pointer;
+  padding: var(--oj-core-spacing-1x);
+  border-radius: var(--oj-core-border-radius-md);
+}
+
+.fq-hist-sql {
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  font-size: 0.75rem;
+  word-break: break-word;
+  padding: 0;
+}
+
+.fq-table-item:hover,
+.fq-col-item:hover,
+.fq-table-item:focus-visible,
+.fq-col-item:focus-visible {
+  background: var(--oj-core-neutral-2);
+}
+
+.fq-hist-meta {
+  display: flex;
+  align-items: center;
+  gap: var(--oj-core-spacing-1x);
+  margin-top: var(--oj-core-spacing-1x);
+}
+
+.fq-dot {
+  width: 0.5rem;
+  height: 0.5rem;
+  border-radius: 50%;
+  flex: 0 0 auto;
+}
+
+.fq-dot--ok {
+  background: var(--oj-core-success-3);
+}
+
+.fq-dot--bad {
+  background: var(--oj-core-danger-3);
+}
+
+.fq-link {
+  border: 0;
+  background: none;
+  padding: 0;
+  font: inherit;
+  color: var(--oj-core-text-color-brand);
+  cursor: pointer;
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+
+.fq-mono {
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  font-size: 0.8125rem;
+  word-break: break-all;
+}
+
+.fq-described-head {
+  margin-bottom: var(--oj-core-spacing-1x);
+}
+
+.fq-described h3,
+.fq-described p {
+  margin: var(--oj-core-spacing-1x) 0;
+}
+
+.fq-described-actions {
+  margin: var(--oj-core-spacing-2x) 0;
+}
+
+/* ---------- Settings dialog ---------- */
+
+.fq-dialog {
+  width: min(40rem, 94vw);
+}
+
+.fq-dialog-section {
+  margin: var(--oj-core-spacing-3x) 0 var(--oj-core-spacing-1x);
+}
+
+.fq-dialog-section:first-child {
+  margin-top: 0;
+}
+
+.fq-dialog-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--oj-core-spacing-2x);
+  margin-top: var(--oj-core-spacing-2x);
+}
+
+.fq-status {
+  margin: var(--oj-core-spacing-3x) 0 0;
+  padding: var(--oj-core-spacing-2x);
+  border-radius: var(--oj-core-border-radius-md);
+  white-space: pre-wrap;
+}
+
+.fq-status--ok {
+  background: var(--oj-core-success-1, var(--oj-core-info-secondary-1));
+  border-left: 3px solid var(--oj-core-success-3);
+}
+
+.fq-status--bad {
+  background: var(--oj-core-danger-secondary-1);
+  border-left: 3px solid var(--oj-core-danger-3);
+}
+
+/* ---------- Narrow screens: the side panel goes under the editor ---------- */
+
+@media (max-width: 960px) {
+  .fq-body--with-side {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .fq-side {
+    border-left: 0;
+    border-top: 1px solid var(--oj-core-divider-color);
+    position: static;
+    max-height: none;
+  }
+
+  .fq-header {
+    flex-wrap: wrap;
+  }
+
+  .fq-hint {
+    display: none;
+  }
+}

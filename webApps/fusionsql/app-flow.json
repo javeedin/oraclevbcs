@@ -1,0 +1,32 @@
+{
+  "id": "fusionsql",
+  "description": "Fusion SQL: run SELECT statements on Oracle Fusion through a BI Publisher runReport SOAP call and see the rows in a grid",
+  "defaultPage": "fusion-sql",
+  "services": {},
+  "translations": {
+    "app": {
+      "path": "./resources/strings/app/nls/app-strings"
+    }
+  },
+  "types": {},
+  "variables": {},
+  "eventListeners": {},
+  "userConfig": {
+    "type": "vb/DefaultSecurityProvider",
+    "configuration": {},
+    "embedding": "deny"
+  },
+  "security": {
+    "access": {
+      "requiresAuthentication": false
+    }
+  },
+  "imports": {
+    "css": [
+      "/resources/css/app.css"
+    ]
+  },
+  "@dt": {
+    "applicationTemplateType": "redwood"
+  }
+}

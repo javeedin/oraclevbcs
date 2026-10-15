@@ -1,0 +1,62 @@
+{
+  // Run with Ctrl+Shift+P > "Tasks: Run Task", or Ctrl+Shift+B for the default build.
+  // Oracle's build tools need Node 20 (see .nvmrc). Node 24 fails with "Unexpected identifier 'assert'".
+  "version": "2.0.0",
+  "tasks": [
+    {
+      "label": "VB: install build tools",
+      "type": "shell",
+      "command": "npm install",
+      "problemMatcher": []
+    },
+    {
+      "label": "VB: build (validate sources)",
+      "detail": "npm run build - catches broken JSON, missing files and bad metadata before you push",
+      "type": "shell",
+      "command": "npm run build",
+      "group": { "kind": "build", "isDefault": true },
+      "problemMatcher": []
+    },
+    {
+      "label": "Fusion: BIP dev proxy (port 8890)",
+      "detail": "Forwards runReport calls from the local preview to Fusion with the credentials in .env",
+      "type": "shell",
+      "command": "npm run proxy",
+      "isBackground": true,
+      "problemMatcher": []
+    },
+    {
+      "label": "VB: local preview (port 8888)",
+      "detail": "Builds and serves webApps/fusionsql at http://localhost:8888",
+      "type": "shell",
+      "command": "npm run serve",
+      "isBackground": true,
+      "problemMatcher": []
+    },
+    {
+      "label": "Test: SOAP and result parsing",
+      "type": "shell",
+      "command": "npm test",
+      "problemMatcher": []
+    },
+    {
+      "label": "VB: audit",
+      "detail": "grunt vb-audit - Oracle's JET and VB best-practice rules",
+      "type": "shell",
+      "command": "npx grunt vb-audit",
+      "problemMatcher": []
+    },
+    {
+      "label": "VB: package for deployment",
+      "type": "shell",
+      "command": "npx grunt vb-process-local vb-package",
+      "problemMatcher": []
+    },
+    {
+      "label": "Lint JS (modules, chains, tools)",
+      "type": "shell",
+      "command": "npm run lint",
+      "problemMatcher": ["$eslint-stylish"]
+    }
+  ]
+}

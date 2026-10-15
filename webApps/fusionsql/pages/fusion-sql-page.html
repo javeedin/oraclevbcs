@@ -1,0 +1,339 @@
+<!--
+  Fusion SQL: write a SELECT, run it on Oracle Fusion through BI Publisher (runReport over SOAP),
+  and read the rows in a grid. History and a table browser open in the side panel.
+-->
+<div class="fq-app">
+
+  <header class="fq-header">
+    <div class="fq-brand">
+      <span class="fq-logo" aria-hidden="true">SQL</span>
+      <div class="fq-brand-text">
+        <h1 class="oj-typography-heading-xs fq-title">Fusion SQL</h1>
+        <p class="oj-typography-body-xs oj-text-color-secondary fq-connection" :title="[[ $variables.connection ]]">
+          <oj-bind-text value="[[ $variables.connection ]]"></oj-bind-text>
+        </p>
+      </div>
+    </div>
+    <div class="fq-header-actions">
+      <oj-button chroming="[[ $variables.panel === 'history' ? 'outlined' : 'borderless' ]]" on-oj-action="[[$listeners.showHistory]]" title="Queries you ran in this browser">History</oj-button>
+      <oj-button chroming="[[ $variables.panel === 'tables' ? 'outlined' : 'borderless' ]]" on-oj-action="[[$listeners.showTables]]" title="Find Fusion tables and views and their columns">Tables</oj-button>
+      <oj-button chroming="borderless" on-oj-action="[[$listeners.openSettings]]" title="Connection, report path and Claude key">Settings</oj-button>
+    </div>
+  </header>
+
+  <oj-messages messages="[[ $variables.messages ]]" display="notification" position="{}"></oj-messages>
+
+  <div :class="[[ $variables.panel ? 'fq-body fq-body--with-side' : 'fq-body' ]]">
+
+    <main class="fq-main">
+
+      <!-- ============ Ask Claude ============ -->
+      <div class="fq-ask">
+        <oj-input-text id="askField" class="fq-ask-input"
+          value="{{ $variables.ask }}"
+          placeholder="Ask Claude for a query, e.g. open AP invoices over 10,000 AED by supplier"
+          aria-label="Describe the data you want"
+          disabled="[[ $variables.askBusy ]]"
+          on-keydown="[[$listeners.askKeydown]]"></oj-input-text>
+        <oj-button chroming="outlined" disabled="[[ $variables.askBusy ]]" on-oj-action="[[$listeners.askClick]]">
+          <oj-bind-text value="[[ $variables.askBusy ? 'Writing…' : 'Write SQL' ]]"></oj-bind-text>
+        </oj-button>
+      </div>
+      <oj-bind-if test="[[ $variables.askNote ]]">
+        <p class="fq-ask-note oj-typography-body-sm"><oj-bind-text value="[[ $variables.askNote ]]"></oj-bind-text></p>
+      </oj-bind-if>
+
+      <!-- ============ Editor ============ -->
+      <oj-text-area id="sqlEditor" class="fq-editor oj-form-control-full-width"
+        value="{{ $variables.sql }}"
+        rows="11"
+        resize-behavior="vertical"
+        label-edge="none"
+        aria-label="SQL editor"
+        placeholder="SELECT ... FROM ... WHERE ..."
+        on-keydown="[[$listeners.editorKeydown]]"></oj-text-area>
+
+      <div class="fq-toolbar">
+        <oj-button chroming="callToAction" disabled="[[ $variables.running ]]" on-oj-action="[[$listeners.runClick]]">
+          <oj-bind-text value="[[ $variables.running ? 'Running…' : 'Run' ]]"></oj-bind-text>
+        </oj-button>
+        <span class="oj-typography-body-xs oj-text-color-secondary fq-hint">Ctrl+Enter runs the statement at the cursor, or what you select</span>
+        <span class="fq-spacer"></span>
+        <oj-input-number class="fq-maxrows"
+          label-hint="Max rows"
+          label-edge="inside"
+          min="1"
+          max="10000"
+          step="100"
+          value="{{ $variables.maxRows }}"
+          on-value-changed="[[$listeners.maxRowsChanged]]"></oj-input-number>
+        <oj-button chroming="borderless" disabled="[[ $variables.running ]]" on-oj-action="[[$listeners.clearClick]]">Clear</oj-button>
+      </div>
+
+      <div class="fq-starters" aria-label="Example queries">
+        <span class="oj-typography-body-xs oj-text-color-secondary">Examples:</span>
+        <oj-bind-for-each data="[[ $variables.starters ]]">
+          <template>
+            <button type="button" class="fq-chip" :title="[[ $current.data.hint ]]" on-click="[[$listeners.starterClick]]">
+              <oj-bind-text value="[[ $current.data.label ]]"></oj-bind-text>
+            </button>
+          </template>
+        </oj-bind-for-each>
+      </div>
+
+      <!-- ============ Running / error ============ -->
+      <oj-bind-if test="[[ $variables.running ]]">
+        <oj-progress-bar class="fq-progress" value="-1" aria-label="Running the query on Fusion"></oj-progress-bar>
+      </oj-bind-if>
+
+      <oj-bind-if test="[[ $variables.error.show ]]">
+        <div class="fq-error" role="alert">
+          <div class="fq-error-head">
+            <span class="oj-typography-body-md oj-typography-semi-bold">The query did not run</span>
+            <span class="fq-spacer"></span>
+            <oj-button chroming="outlined" disabled="[[ $variables.askBusy ]]" on-oj-action="[[$listeners.fixClick]]">
+              <oj-bind-text value="[[ $variables.askBusy ? 'Fixing…' : 'Fix with Claude' ]]"></oj-bind-text>
+            </oj-button>
+          </div>
+          <pre class="fq-error-text"><oj-bind-text value="[[ $variables.error.message ]]"></oj-bind-text></pre>
+        </div>
+      </oj-bind-if>
+
+      <!-- ============ Results ============ -->
+      <oj-bind-if test="[[ !$variables.result.ran && !$variables.error.show && !$variables.running ]]">
+        <div class="fq-empty">
+          <p class="oj-typography-body-md">Write a SELECT and press <strong>Run</strong>.</p>
+          <p class="oj-typography-body-sm oj-text-color-secondary">The query runs on Fusion inside the BI Publisher report, as the report's user. Only SELECT and WITH statements are accepted.</p>
+        </div>
+      </oj-bind-if>
+
+      <oj-bind-if test="[[ $variables.result.ran ]]">
+        <section class="fq-results" aria-label="Query results">
+          <div class="fq-results-head">
+            <span class="oj-typography-body-sm fq-summary"><oj-bind-text value="[[ $variables.result.summary ]]"></oj-bind-text></span>
+            <oj-bind-if test="[[ $variables.result.truncated ]]">
+              <span class="oj-badge oj-badge-warning oj-badge-subtle">More rows on Fusion</span>
+            </oj-bind-if>
+            <span class="fq-spacer"></span>
+            <oj-input-search class="fq-filter"
+              value="{{ $variables.filterText }}"
+              placeholder="Filter these rows"
+              aria-label="Filter the rows shown"
+              on-raw-value-changed="[[$listeners.filterChanged]]"></oj-input-search>
+            <oj-button chroming="borderless" disabled="[[ $variables.result.rows === 0 ]]" on-oj-action="[[$listeners.copyResults]]" title="Copy as tab-separated text, ready to paste into Excel">Copy</oj-button>
+            <oj-button chroming="borderless" disabled="[[ $variables.result.rows === 0 ]]" on-oj-action="[[$listeners.exportCsv]]" title="Download as CSV (UTF-8, opens in Excel)">CSV</oj-button>
+          </div>
+
+          <oj-bind-for-each data="[[ $variables.result.warnings ]]">
+            <template>
+              <p class="fq-warning oj-typography-body-sm"><oj-bind-text value="[[ $current.data ]]"></oj-bind-text></p>
+            </template>
+          </oj-bind-for-each>
+
+          <oj-bind-if test="[[ $variables.result.rows === 0 ]]">
+            <p class="fq-norows oj-text-color-secondary">No rows.</p>
+          </oj-bind-if>
+
+          <oj-bind-if test="[[ $variables.result.rows > 0 ]]">
+            <oj-table id="resultTable" class="fq-table"
+              data="[[ $variables.tableADP ]]"
+              columns="[[ $variables.columns ]]"
+              display="grid"
+              layout="contents"
+              scroll-policy="loadMoreOnScroll"
+              scroll-policy-options.fetch-size="200"
+              horizontal-grid-visible="enabled"
+              vertical-grid-visible="enabled"
+              aria-label="Query results">
+              <template slot="cellTemplate">
+                <oj-bind-if test="[[ $current.data === null || $current.data === undefined ]]">
+                  <span class="fq-null">null</span>
+                </oj-bind-if>
+                <oj-bind-if test="[[ $current.data !== null && $current.data !== undefined ]]">
+                  <span class="fq-cell" :title="[[ $functions.cellTitle($current.data) ]]"><oj-bind-text value="[[ $current.data ]]"></oj-bind-text></span>
+                </oj-bind-if>
+              </template>
+            </oj-table>
+          </oj-bind-if>
+        </section>
+      </oj-bind-if>
+    </main>
+
+    <!-- ============ Side panel: history ============ -->
+    <oj-bind-if test="[[ $variables.panel === 'history' ]]">
+      <aside class="fq-side" aria-label="Query history">
+        <div class="fq-side-head">
+          <h2 class="oj-typography-subheading-xs">History</h2>
+          <span class="fq-spacer"></span>
+          <oj-button chroming="borderless" disabled="[[ $variables.history.length === 0 ]]" on-oj-action="[[$listeners.historyClear]]">Clear</oj-button>
+          <oj-button chroming="borderless" display="icons" on-oj-action="[[$listeners.closePanel]]">
+            <span slot="startIcon" class="oj-ux-ico-close"></span>
+            Close
+          </oj-button>
+        </div>
+        <oj-bind-if test="[[ $variables.history.length === 0 ]]">
+          <p class="oj-typography-body-sm oj-text-color-secondary">Queries you run appear here, newest first. They stay in this browser only.</p>
+        </oj-bind-if>
+        <ul class="fq-list">
+          <oj-bind-for-each data="[[ $variables.history ]]">
+            <template>
+              <li class="fq-hist">
+                <button type="button" class="fq-hist-sql" title="Load into the editor" on-click="[[$listeners.historyLoad]]">
+                  <oj-bind-text value="[[ $functions.preview($current.data.sql) ]]"></oj-bind-text>
+                </button>
+                <div class="fq-hist-meta oj-typography-body-xs">
+                  <span :class="[[ $current.data.ok ? 'fq-dot fq-dot--ok' : 'fq-dot fq-dot--bad' ]]" aria-hidden="true"></span>
+                  <span class="oj-text-color-secondary"><oj-bind-text value="[[ $functions.historyMeta($current.data) ]]"></oj-bind-text></span>
+                  <span class="fq-spacer"></span>
+                  <button type="button" class="fq-link" on-click="[[$listeners.historyRun]]">Run again</button>
+                </div>
+              </li>
+            </template>
+          </oj-bind-for-each>
+        </ul>
+      </aside>
+    </oj-bind-if>
+
+    <!-- ============ Side panel: tables ============ -->
+    <oj-bind-if test="[[ $variables.panel === 'tables' ]]">
+      <aside class="fq-side" aria-label="Tables and views">
+        <div class="fq-side-head">
+          <h2 class="oj-typography-subheading-xs">Tables and views</h2>
+          <span class="fq-spacer"></span>
+          <oj-button chroming="borderless" display="icons" on-oj-action="[[$listeners.closePanel]]">
+            <span slot="startIcon" class="oj-ux-ico-close"></span>
+            Close
+          </oj-button>
+        </div>
+
+        <oj-bind-if test="[[ !$variables.described ]]">
+          <div class="fq-side-search">
+            <oj-input-search id="tableSearchField" class="fq-grow"
+              value="{{ $variables.tableSearch }}"
+              placeholder="Name, e.g. PO_HEADERS or ONHAND"
+              aria-label="Search tables and views"
+              on-oj-value-action="[[$listeners.tablesSearch]]"></oj-input-search>
+            <oj-button chroming="outlined" disabled="[[ $variables.tablesBusy ]]" on-oj-action="[[$listeners.tablesSearchClick]]">Find</oj-button>
+          </div>
+        </oj-bind-if>
+
+        <oj-bind-if test="[[ $variables.tablesBusy ]]">
+          <oj-progress-bar class="fq-progress" value="-1" aria-label="Looking up the data dictionary"></oj-progress-bar>
+        </oj-bind-if>
+        <oj-bind-if test="[[ $variables.tablesNote ]]">
+          <p class="oj-typography-body-sm oj-text-color-secondary"><oj-bind-text value="[[ $variables.tablesNote ]]"></oj-bind-text></p>
+        </oj-bind-if>
+
+        <oj-bind-if test="[[ !$variables.described ]]">
+          <ul class="fq-list">
+            <oj-bind-for-each data="[[ $variables.tables ]]">
+              <template>
+                <li>
+                  <button type="button" class="fq-table-item" title="Show the columns" on-click="[[$listeners.tableOpen]]">
+                    <span class="fq-mono"><oj-bind-text value="[[ $current.data.name ]]"></oj-bind-text></span>
+                    <span class="oj-typography-body-xs oj-text-color-secondary"><oj-bind-text value="[[ $current.data.type + ' · ' + $current.data.owner ]]"></oj-bind-text></span>
+                  </button>
+                </li>
+              </template>
+            </oj-bind-for-each>
+          </ul>
+        </oj-bind-if>
+
+        <oj-bind-if test="[[ $variables.described ]]">
+          <div class="fq-described">
+            <div class="fq-described-head">
+              <button type="button" class="fq-link" on-click="[[$listeners.tableBack]]">← Back to the list</button>
+            </div>
+            <h3 class="oj-typography-body-md oj-typography-semi-bold fq-mono"><oj-bind-text value="[[ $variables.described ? $variables.described.name : '' ]]"></oj-bind-text></h3>
+            <p class="oj-typography-body-xs oj-text-color-secondary"><oj-bind-text value="[[ $variables.described ? $variables.described.summary : '' ]]"></oj-bind-text></p>
+            <div class="fq-described-actions">
+              <oj-button chroming="outlined" on-oj-action="[[$listeners.tableInsert]]">Write a SELECT</oj-button>
+            </div>
+            <p class="oj-typography-body-xs oj-text-color-secondary">Click a column to type its name at the cursor. Claude also gets these columns when it writes or fixes a query.</p>
+            <ul class="fq-list">
+              <oj-bind-for-each data="[[ $functions.describedColumns($variables.described) ]]">
+                <template>
+                  <li>
+                    <button type="button" class="fq-col-item" on-click="[[$listeners.columnInsert]]">
+                      <span class="fq-mono"><oj-bind-text value="[[ $current.data.name ]]"></oj-bind-text></span>
+                      <span class="oj-typography-body-xs oj-text-color-secondary"><oj-bind-text value="[[ $current.data.type + ($current.data.nullable ? '' : ' · not null') ]]"></oj-bind-text></span>
+                    </button>
+                  </li>
+                </template>
+              </oj-bind-for-each>
+            </ul>
+          </div>
+        </oj-bind-if>
+      </aside>
+    </oj-bind-if>
+  </div>
+
+  <!-- ============ Settings ============ -->
+  <oj-dialog id="settingsDialog" class="fq-dialog" dialog-title="Settings" cancel-behavior="icon">
+    <div slot="body">
+      <h2 class="oj-typography-subheading-xs fq-dialog-section">Connection to Fusion</h2>
+      <oj-form-layout max-columns="1" direction="row" label-edge="top">
+        <oj-radioset label-hint="How this page reaches BI Publisher" value="{{ $variables.settingsForm.transport }}">
+          <oj-option value="service">VB service connection (in VB Studio; VB's proxy adds the credentials)</oj-option>
+          <oj-option value="direct">Direct URL (local preview through the dev proxy, npm run proxy)</oj-option>
+        </oj-radioset>
+        <oj-bind-if test="[[ $variables.settingsForm.transport === 'service' ]]">
+          <oj-input-text label-hint="Service connection endpoint"
+            value="{{ $variables.settingsForm.endpointId }}"
+            help-hints.definition="service/endpoint ID of the POST endpoint on .../xmlpserver/services/ExternalReportWSSService"></oj-input-text>
+        </oj-bind-if>
+        <oj-bind-if test="[[ $variables.settingsForm.transport === 'direct' ]]">
+          <oj-input-text label-hint="URL"
+            value="{{ $variables.settingsForm.directUrl }}"
+            help-hints.definition="The dev proxy listens on http://localhost:8890/bip"></oj-input-text>
+        </oj-bind-if>
+        <oj-input-text label-hint="Report path"
+          value="{{ $variables.settingsForm.reportPath }}"
+          help-hints.definition="Full catalog path of the Fusion SQL report, e.g. /Custom/FusionSQL/FUSION_SQL_RPT.xdo"></oj-input-text>
+        <oj-input-text label-hint="SQL parameter" value="{{ $variables.settingsForm.sqlParam }}"></oj-input-text>
+        <oj-radioset label-hint="Row limit" value="{{ $variables.settingsForm.limitMode }}">
+          <oj-option value="report">Pass it to the report as a parameter</oj-option>
+          <oj-option value="wrap">Wrap the query: SELECT * FROM (...) WHERE ROWNUM &lt;= n</oj-option>
+        </oj-radioset>
+        <oj-bind-if test="[[ $variables.settingsForm.limitMode === 'report' ]]">
+          <oj-input-text label-hint="Row limit parameter" value="{{ $variables.settingsForm.maxRowsParam }}"></oj-input-text>
+        </oj-bind-if>
+        <oj-input-number label-hint="Timeout (seconds)" min="10" max="600" step="10" value="{{ $variables.settingsForm.timeoutSec }}"></oj-input-number>
+      </oj-form-layout>
+      <div class="fq-dialog-row">
+        <oj-button chroming="outlined" disabled="[[ $variables.testing ]]" on-oj-action="[[$listeners.testConnection]]">
+          <oj-bind-text value="[[ $variables.testing ? 'Testing…' : 'Test connection' ]]"></oj-bind-text>
+        </oj-button>
+        <oj-button chroming="borderless" on-oj-action="[[$listeners.resetSettings]]">Reset to defaults</oj-button>
+      </div>
+
+      <h2 class="oj-typography-subheading-xs fq-dialog-section">Claude (optional)</h2>
+      <p class="oj-typography-body-sm oj-text-color-secondary">Writes a query from a sentence, and fixes a query from its error. It never runs anything by itself.</p>
+      <oj-form-layout max-columns="1" direction="row" label-edge="top">
+        <oj-input-password id="claudeKeyField"
+          label-hint="Claude API key"
+          value="{{ $variables.claudeForm.apiKey }}"
+          placeholder="[[ $variables.claude.hasKey ? 'Saved key ' + $variables.claude.keyHint + ' (leave empty to keep it)' : 'sk-ant-…' ]]"
+          help-hints.definition="Create a key in the Claude Console under Settings > API keys."></oj-input-password>
+        <oj-select-single label-hint="Model" data="[[ $variables.modelsADP ]]" item-text="label" value="{{ $variables.claudeForm.model }}"></oj-select-single>
+        <oj-switch label-hint="Remember the key in this browser" value="{{ $variables.claudeForm.remember }}"></oj-switch>
+      </oj-form-layout>
+      <div class="fq-dialog-row">
+        <oj-button chroming="outlined" disabled="[[ $variables.testing ]]" on-oj-action="[[$listeners.testClaude]]">Test Claude</oj-button>
+        <oj-bind-if test="[[ $variables.claude.hasKey ]]">
+          <oj-button chroming="borderless" on-oj-action="[[$listeners.removeKey]]">Remove key</oj-button>
+        </oj-bind-if>
+      </div>
+
+      <oj-bind-if test="[[ $variables.settingsStatus ]]">
+        <p :class="[[ $variables.settingsOk ? 'fq-status fq-status--ok' : 'fq-status fq-status--bad' ]]" role="status">
+          <oj-bind-text value="[[ $variables.settingsStatus ]]"></oj-bind-text>
+        </p>
+      </oj-bind-if>
+    </div>
+    <div slot="footer">
+      <oj-button chroming="borderless" on-oj-action="[[$listeners.closeSettings]]">Cancel</oj-button>
+      <oj-button chroming="callToAction" on-oj-action="[[$listeners.saveSettings]]">Save</oj-button>
+    </div>
+  </oj-dialog>
+</div>

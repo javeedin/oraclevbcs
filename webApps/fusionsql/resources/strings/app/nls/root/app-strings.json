@@ -1,0 +1,10 @@
+{
+  "app_title": "Fusion SQL",
+  "@app_title": {
+    "description": "Application name shown in the header"
+  },
+  "app_subtitle": "Run SQL on Oracle Fusion through BI Publisher",
+  "@app_subtitle": {
+    "description": "Subtitle shown in the header"
+  }
+}
