@@ -104,7 +104,8 @@ User feedback: keep Home and Dashboard compact (no big cards, small charts ~12re
     main.js (IPC checks) and app-flow.js in step. The header "Download desktop app" button (hidden in the
     desktop app) opens `releases/latest/download/Maintenance-Setup.exe` on GitHub.
 14. After any change run `npm run build` and fix errors before committing; `npm run lint` covers
-    webApps and desktop. Desktop releases: bump `desktop/package.json` version, tag `v<version>`, push.
+    webApps and desktop. Releases: bump `version` in desktop/package.json AND `APP_VERSION` in app-flow.js
+    (the header badge; CI fails if they differ), push, then tag `v<version>` and push the tag.
 
 ## Data
 

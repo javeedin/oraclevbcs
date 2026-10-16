@@ -83,7 +83,7 @@ function createWindow() {
     ...bounds,
     minWidth: 1024,
     minHeight: 640,
-    title: 'Maintenance',
+    title: `Maintenance ${app.getVersion()}`,
     icon: asset(process.platform === 'win32' ? 'icon.ico' : 'icon.png'),
     backgroundColor: '#f5f4f2',
     show: false,
@@ -95,6 +95,13 @@ function createWindow() {
       nodeIntegration: false,
       spellcheck: true,
     },
+  });
+
+  // The page sets its own title ("Home", "Requests", ...): show it with the app name and version.
+  win.on('page-title-updated', (event, title) => {
+    event.preventDefault();
+    const name = `Maintenance ${app.getVersion()}`;
+    win.setTitle(title && title !== name ? `${title} - ${name}` : name);
   });
 
   win.once('ready-to-show', () => {

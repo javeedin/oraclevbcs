@@ -85,8 +85,9 @@ It still needs the internet: the Redwood templates and the VB runtime load from 
 By default it shows the app bundled in it, with its own sample data. To use the app hosted in VB
 Studio instead, open **File > Desktop settings…** and paste its URL into `serverUrl`.
 
-**Releasing a new version:** change `version` in `desktop/package.json`, commit, then
-`git tag v1.0.1 && git push origin v1.0.1`. The **Desktop app** workflow builds the VB app,
+**Releasing a new version:** change `version` in `desktop/package.json` and `APP_VERSION` in
+`webApps/maint/app-flow.js` (the version shown in the header), commit and push, then
+`git tag v1.0.2 && git push origin v1.0.2`. The **Desktop app** workflow builds the VB app,
 smoke-tests the desktop app with it, and publishes the installer as a release; the header button and
 the installed apps' updates pick it up. Details in [desktop/README.md](desktop/README.md).
 

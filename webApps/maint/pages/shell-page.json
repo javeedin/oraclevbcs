@@ -126,6 +126,14 @@
         "platform": "",
         "source": ""
       }
+    },
+    "appVersion": {
+      "type": "object",
+      "defaultValue": {
+        "version": "",
+        "label": "",
+        "title": ""
+      }
     }
   },
   "metadata": {},

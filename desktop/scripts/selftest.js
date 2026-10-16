@@ -149,6 +149,8 @@ async function run({ win, appUrl, getCounts, key, log }) {
         !!header,
         header || (await js('[...document.querySelectorAll(".mx-appbar oj-button")].map((e) => `${e.textContent.trim()} | title=${e.getAttribute("title") || ""}`)')),
       );
+      const badge = await js('[...document.querySelectorAll(".mx-appbar .oj-badge")].map((e) => e.textContent.trim())');
+      check('header shows the installed version', badge.includes(`v${app.getVersion()}`) && win.getTitle().includes(app.getVersion()), { badges: badge, title: win.getTitle() });
       check('no "Download desktop app" button inside the desktop app', (await js('!document.body.textContent.includes("Download desktop app")')) === true);
 
       const shown = header ? Number((header.find((t) => /^Approvals/.test(t)).match(/\((\d+)\)/) || [])[1]) : -1;

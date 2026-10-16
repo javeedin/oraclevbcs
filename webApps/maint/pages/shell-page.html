@@ -15,6 +15,9 @@
           <span class="oj-typography-body-md oj-typography-semi-bold">Maintenance</span>
         </button>
         <span class="oj-badge oj-badge-subtle oj-badge-info mx-appbar-tag">Sample data</span>
+        <oj-bind-if test="[[ $variables.appVersion.label ]]">
+          <span class="oj-badge oj-badge-subtle mx-appbar-tag" :title="[[ $variables.appVersion.title ]]"><oj-bind-text value="[[ $variables.appVersion.label ]]"></oj-bind-text></span>
+        </oj-bind-if>
         <span class="mx-appbar-spacer"></span>
         <!-- Bridge: the app module raises mxcounts / mxtoast / mxask / mxcommand here (see app-flow.js) -->
         <span id="mxBridge" hidden="hidden"

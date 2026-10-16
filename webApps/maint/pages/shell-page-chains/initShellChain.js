@@ -22,6 +22,7 @@ define([
       $application.variables.counts = counts;
       $page.variables.pendingCount = counts.pending;
       $page.variables.desktop = $application.functions.desktopInfo();
+      $page.variables.appVersion = $application.functions.appVersion();
       $page.variables.apSettings = $application.functions.autopilotSettings();
       $page.variables.apSuggestions = $application.functions.autopilotSuggestions();
       $page.variables.apModelsADP.data = $application.functions.autopilotModels();

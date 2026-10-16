@@ -1,7 +1,7 @@
 {
   "name": "maintenance-desktop",
   "productName": "Maintenance",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": "Desktop client for the Maintenance module (Oracle Visual Builder, Redwood)",
   "author": "javeedin",
   "license": "UNLICENSED",

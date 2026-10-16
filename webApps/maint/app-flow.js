@@ -754,6 +754,10 @@ define(['oj-sp/spectra-shell/config/config'], () => {
    * key lives in the operating system's secure storage and the desktop app calls Claude itself.
    * ------------------------------------------------------------------ */
 
+  // The app's version: shown in the header. Keep it equal to "version" in desktop/package.json
+  // (the desktop release); the Desktop app workflow checks this on every release tag.
+  const APP_VERSION = '1.0.1';
+
   const DESKTOP = typeof window !== 'undefined' && window.mxDesktop && window.mxDesktop.isDesktop === true ? window.mxDesktop : null;
   const DESKTOP_RELEASES = 'https://github.com/javeedin/oraclevbcs/releases/latest';
   const DESKTOP_SETUP = `${DESKTOP_RELEASES}/download/Maintenance-Setup.exe`;
@@ -2097,6 +2101,17 @@ define(['oj-sp/spectra-shell/config/config'], () => {
       }
       const i = desktopCall('info') || {};
       return { isDesktop: true, version: String(i.version || ''), platform: String(i.platform || ''), source: String(i.source || '') };
+    }
+
+    /** The version badge in the header: { version, label, title }. In the desktop app, the installed version. */
+    appVersion() {
+      const i = DESKTOP ? desktopCall('info') || {} : {};
+      const version = String((DESKTOP && i.version) || APP_VERSION);
+      return {
+        version,
+        label: `v${version}`,
+        title: DESKTOP ? `Maintenance desktop app ${version}. Help > Check for updates looks for a newer one.` : `Maintenance ${version}`,
+      };
     }
 
     /** Where to download the desktop app: the Windows installer, or the releases page on other systems. */

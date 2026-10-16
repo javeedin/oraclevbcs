@@ -52,10 +52,9 @@ jobs:
         with:
           node-version: 20
 
-      - name: Check the tag matches desktop/package.json
-        if: startsWith(github.ref, 'refs/tags/v')
+      - name: Check the versions match (desktop/package.json, app-flow.js, tag)
         run: |
-          node -e "const v = require('./desktop/package.json').version; const t = process.env.GITHUB_REF_NAME; if (t !== 'v' + v) { console.log('::error title=Version mismatch::Tag ' + t + ' does not match desktop/package.json version ' + v); process.exit(1); }"
+          node -e "const v = require('./desktop/package.json').version; const m = require('fs').readFileSync('webApps/maint/app-flow.js', 'utf8').match(/const APP_VERSION = '([^']+)'/); if (!m || m[1] !== v) { console.log('::error title=Version mismatch::APP_VERSION in webApps/maint/app-flow.js (' + (m && m[1]) + ') must equal desktop/package.json version ' + v); process.exit(1); } const t = process.env.GITHUB_REF_NAME; if (process.env.GITHUB_REF.startsWith('refs/tags/v') && t !== 'v' + v) { console.log('::error title=Version mismatch::Tag ' + t + ' does not match version ' + v); process.exit(1); }"
 
       - name: Install Oracle's VB build tools
         run: node desktop/scripts/ci-step.js "Install VB build tools" -- npm install --no-audit --no-fund
