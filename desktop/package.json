@@ -1,7 +1,7 @@
 {
   "name": "maintenance-desktop",
   "productName": "Maintenance",
-  "version": "1.0.2",
+  "version": "1.0.3",
   "description": "Desktop client for the Maintenance module (Oracle Visual Builder, Redwood)",
   "author": "javeedin",
   "license": "UNLICENSED",
@@ -50,7 +50,7 @@
         }
       ],
       "icon": "assets/icon.ico",
-      "artifactName": "Maintenance-Setup.${ext}"
+      "artifactName": "Maintenance_New_Setup.${ext}"
     },
     "nsis": {
       "oneClick": false,

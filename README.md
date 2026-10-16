@@ -64,7 +64,7 @@ is blocking browser calls to it; the server-side proxy is then the way to go.
 
 ### Desktop app (Windows)
 
-**Download desktop app** in the header downloads `Maintenance-Setup.exe` from the latest
+**Download desktop app** in the header downloads `Maintenance_New_Setup.exe` from the latest
 [GitHub release](https://github.com/javeedin/oraclevbcs/releases/latest). It installs for the
 current Windows user (no admin rights) and adds Start menu and desktop shortcuts. The installer is
 not code-signed yet, so Windows SmartScreen may say "Windows protected your PC": choose **More
@@ -151,7 +151,7 @@ In VS Code: **Terminal > Run Task > VB: install build tools**, then **VB: local 
 npm run build:desktop        # builds the VB app and copies it, as vb-serve serves it, into desktop\app
 cd desktop
 npm install
-npm start                    # or: npm run dist  -> desktop\dist\Maintenance-Setup.exe
+npm start                    # or: npm run dist  -> desktop\dist\Maintenance_New_Setup.exe
 ```
 
 ## 2. Bring it into VB Studio

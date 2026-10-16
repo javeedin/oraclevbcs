@@ -41,7 +41,7 @@ npm run build:desktop        # npm run build, then scripts/build-app.js:
 cd desktop
 npm install
 npm start                    # run it
-npm run dist                 # Windows installer: dist/Maintenance-Setup.exe
+npm run dist                 # Windows installer: dist/Maintenance_New_Setup.exe
 ```
 
 `settings.json` (File > Desktop settings…, in `%APPDATA%\Maintenance`):
@@ -71,12 +71,17 @@ the Claude call from the main process, the header count (not 0) and the tray bad
 `.github/workflows/desktop.yml` runs on every push that touches the app or this folder: Linux
 builds the VB app and runs the smoke test with the real app; Windows packages the installer
 (downloadable from the run). On a `v*` tag matching `version` in `package.json`, it publishes a
-GitHub release with `Maintenance-Setup.exe` and `latest.yml`, which the header button and
+GitHub release with `Maintenance_New_Setup.exe` and `latest.yml`, which the header button and
 electron-updater use.
 
 The installer never starts PowerShell: `assets/installer.nsh` replaces electron-builder's check for a
 running app (PowerShell `Get-CimInstance`) with `tasklist`/`taskkill`, because business antivirus such
 as eScan blocks PowerShell started by installers. The workflow's install test fails if it comes back.
+
+Nothing in the app uses PowerShell either. Keep it that way when adding code signing: a signed build
+writes `publisherName` into the app, and electron-updater then checks each update's signature with
+PowerShell (`Get-AuthenticodeSignature`). Give `autoUpdater` a `verifyUpdateCodeSignature` function
+that doesn't use PowerShell at that point.
 
 The installer is not code-signed. To sign it, add a certificate as the `CSC_LINK` and
 `CSC_KEY_PASSWORD` secrets and pass them to the Windows job; electron-builder signs automatically.

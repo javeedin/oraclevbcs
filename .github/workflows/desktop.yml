@@ -3,7 +3,7 @@
 #  1. Linux: builds the Visual Builder app with Oracle's grunt tools, captures it as `grunt vb-serve`
 #     serves it (desktop/app), and smoke-tests the desktop client with the real app under Xvfb
 #     (bridge, secure key, header count, tray commands, Auto Pilot against a mock Claude API).
-#  2. Windows: packages the installer, Maintenance-Setup.exe. On a v* tag (v1.0.1, ...) it publishes
+#  2. Windows: packages the installer, Maintenance_New_Setup.exe. On a v* tag (v1.0.1, ...) it publishes
 #     a GitHub release: the app's "Download desktop app" button and the installed apps' automatic
 #     updates both use the latest release.
 #
@@ -136,7 +136,7 @@ jobs:
           if gh release view "$v" > /dev/null 2>&1; then
             echo "Release $v exists."
           else
-            gh release create "$v" --verify-tag --title "${v#v}" --notes "Maintenance desktop app ${v#v}. Download Maintenance-Setup.exe below."
+            gh release create "$v" --verify-tag --title "${v#v}" --notes "Maintenance desktop app ${v#v}. Download Maintenance_New_Setup.exe below."
           fi
 
       - name: Package the installer (published as a release on a v* tag or a manual release run)
@@ -153,7 +153,7 @@ jobs:
         shell: pwsh
         run: |
           $ErrorActionPreference = 'Stop'
-          $setup = (Get-Item desktop/dist/Maintenance-Setup.exe).FullName
+          $setup = (Get-Item desktop/dist/Maintenance_New_Setup.exe).FullName
           $dir = Join-Path $env:LOCALAPPDATA 'Programs\Maintenance'
           $global:started = [System.Collections.ArrayList]::new()
           Register-CimIndicationEvent -ClassName Win32_ProcessStartTrace -SourceIdentifier MxStart -Action { [void]$global:started.Add([string]$Event.SourceEventArgs.NewEvent.ProcessName) } | Out-Null
@@ -184,7 +184,7 @@ jobs:
 
       - uses: actions/upload-artifact@v4
         with:
-          name: Maintenance-Setup
+          name: Maintenance_New_Setup
           path: |
             desktop/dist/*.exe
             desktop/dist/latest.yml

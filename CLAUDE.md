@@ -16,7 +16,7 @@ desktop/                           Electron desktop client (NOT part of the VB a
                                    main.js, preload.js (window.mxDesktop), lib/server.js, lib/store.js,
                                    scripts/build-app.js (fills desktop/app), scripts/selftest.js
 .github/workflows/desktop.yml      builds + smoke-tests the desktop client; on a v* tag publishes the
-                                   Windows installer as a GitHub release (Maintenance-Setup.exe)
+                                   Windows installer as a GitHub release (Maintenance_New_Setup.exe)
 webApps/maint/
   index.html                       VB entry page
   app-flow.json                    requirejs paths/bundles for oj-sp on Oracle's CDN, app variables
@@ -102,7 +102,10 @@ User feedback: keep Home and Dashboard compact (no big cards, small charts ~12re
     process (`apCall` uses `mxDesktop.claude()`), shows the pending count on the tray and taskbar, notifies
     when Auto Pilot answers in the background, and sends tray/menu/shortcut commands. Keep preload.js,
     main.js (IPC checks) and app-flow.js in step. The header "Download desktop app" button (hidden in the
-    desktop app) opens `releases/latest/download/Maintenance-Setup.exe` on GitHub.
+    desktop app) opens `releases/latest/download/Maintenance_New_Setup.exe` on GitHub.
+    **Nothing that runs on users' PCs may start PowerShell** (eScan and similar antivirus block it): the
+    installer's running-app check is `assets/installer.nsh` (tasklist/taskkill), and the CI install test
+    fails if powershell.exe starts. Give user instructions for Command Prompt or Git Bash.
 14. After any change run `npm run build` and fix errors before committing; `npm run lint` covers
     webApps and desktop. Releases: bump `version` in desktop/package.json AND `APP_VERSION` in app-flow.js
     (the header badge; CI fails if they differ), push, then tag `v<version>` and push the tag.

@@ -756,11 +756,11 @@ define(['oj-sp/spectra-shell/config/config'], () => {
 
   // The app's version: shown in the header. Keep it equal to "version" in desktop/package.json
   // (the desktop release); the Desktop app workflow checks this on every release tag.
-  const APP_VERSION = '1.0.2';
+  const APP_VERSION = '1.0.3';
 
   const DESKTOP = typeof window !== 'undefined' && window.mxDesktop && window.mxDesktop.isDesktop === true ? window.mxDesktop : null;
   const DESKTOP_RELEASES = 'https://github.com/javeedin/oraclevbcs/releases/latest';
-  const DESKTOP_SETUP = `${DESKTOP_RELEASES}/download/Maintenance-Setup.exe`;
+  const DESKTOP_SETUP = `${DESKTOP_RELEASES}/download/Maintenance_New_Setup.exe`;
 
   function shellEvent(name, detail) {
     const el = typeof document !== 'undefined' ? document.getElementById('mxBridge') : null;
@@ -2119,7 +2119,7 @@ define(['oj-sp/spectra-shell/config/config'], () => {
       const nav = typeof navigator !== 'undefined' ? navigator : {};
       const platform = String((nav.userAgentData && nav.userAgentData.platform) || nav.platform || nav.userAgent || '');
       const isWindows = /win/i.test(platform);
-      return { isWindows, url: isWindows ? DESKTOP_SETUP : DESKTOP_RELEASES, file: 'Maintenance-Setup.exe', releases: DESKTOP_RELEASES };
+      return { isWindows, url: isWindows ? DESKTOP_SETUP : DESKTOP_RELEASES, file: 'Maintenance_New_Setup.exe', releases: DESKTOP_RELEASES };
     }
 
     /** A desktop notification, shown only while the desktop app is in the background. No-op in a browser. */
