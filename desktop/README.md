@@ -74,5 +74,9 @@ builds the VB app and runs the smoke test with the real app; Windows packages th
 GitHub release with `Maintenance-Setup.exe` and `latest.yml`, which the header button and
 electron-updater use.
 
+The installer never starts PowerShell: `assets/installer.nsh` replaces electron-builder's check for a
+running app (PowerShell `Get-CimInstance`) with `tasklist`/`taskkill`, because business antivirus such
+as eScan blocks PowerShell started by installers. The workflow's install test fails if it comes back.
+
 The installer is not code-signed. To sign it, add a certificate as the `CSC_LINK` and
 `CSC_KEY_PASSWORD` secrets and pass them to the Windows job; electron-builder signs automatically.

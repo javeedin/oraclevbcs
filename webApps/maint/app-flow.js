@@ -756,7 +756,7 @@ define(['oj-sp/spectra-shell/config/config'], () => {
 
   // The app's version: shown in the header. Keep it equal to "version" in desktop/package.json
   // (the desktop release); the Desktop app workflow checks this on every release tag.
-  const APP_VERSION = '1.0.1';
+  const APP_VERSION = '1.0.2';
 
   const DESKTOP = typeof window !== 'undefined' && window.mxDesktop && window.mxDesktop.isDesktop === true ? window.mxDesktop : null;
   const DESKTOP_RELEASES = 'https://github.com/javeedin/oraclevbcs/releases/latest';

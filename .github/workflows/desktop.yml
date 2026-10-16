@@ -146,6 +146,42 @@ jobs:
           EP_GH_IGNORE_TIME: 'true' # upload into the release created above, however old it is
         run: node scripts/ci-step.js "Package the Windows installer" -- npx electron-builder --win --publish ${{ (startsWith(github.ref, 'refs/tags/v') || (github.event_name == 'workflow_dispatch' && inputs.release)) && 'always' || 'never' }}
 
+      # Antivirus such as eScan blocks PowerShell started by installers ("PowerShell Blocked").
+      # assets/installer.nsh replaces electron-builder's PowerShell check with tasklist/taskkill;
+      # this installs, updates over the running app and uninstalls, watching every process started.
+      - name: Install test (install, update over the running app, uninstall; no PowerShell)
+        shell: pwsh
+        run: |
+          $ErrorActionPreference = 'Stop'
+          $setup = (Get-Item desktop/dist/Maintenance-Setup.exe).FullName
+          $dir = Join-Path $env:LOCALAPPDATA 'Programs\Maintenance'
+          $global:started = [System.Collections.ArrayList]::new()
+          Register-CimIndicationEvent -ClassName Win32_ProcessStartTrace -SourceIdentifier MxStart -Action { [void]$global:started.Add([string]$Event.SourceEventArgs.NewEvent.ProcessName) } | Out-Null
+          function Watch([string]$name, [scriptblock]$run, [int]$settle) {
+            $global:started.Clear()
+            & $run
+            Start-Sleep -Seconds $settle
+            $names = @($global:started | Sort-Object -Unique)
+            Write-Host "$name -> started: $($names -join ', ')"
+            if ($names -contains 'powershell.exe') {
+              Write-Host "::error title=Installer starts PowerShell::$name started powershell.exe ($($names -join ', '))"
+              exit 1
+            }
+            return ,$names
+          }
+          $null = Watch 'install' { Start-Process $setup -ArgumentList '/S' -Wait } 3
+          if (-not (Test-Path "$dir\Maintenance.exe")) { Write-Host "::error title=Install test::Maintenance.exe is not in $dir"; exit 1 }
+          $app = Start-Process "$dir\Maintenance.exe" -PassThru
+          Start-Sleep -Seconds 12
+          $names = Watch 'install over the running app' { Start-Process $setup -ArgumentList '/S' -Wait } 3
+          if ($names -notcontains 'tasklist.exe') { Write-Host "::warning title=Install test::tasklist.exe was not seen while installing over the running app" }
+          if (Get-Process -Id $app.Id -ErrorAction SilentlyContinue) { Write-Host "::error title=Install test::the installer did not close the running app"; exit 1 }
+          if (-not (Test-Path "$dir\Maintenance.exe")) { Write-Host "::error title=Install test::Maintenance.exe missing after the update install"; exit 1 }
+          $null = Watch 'uninstall' { Start-Process "$dir\Uninstall Maintenance.exe" -ArgumentList '/S' -Wait } 15
+          Unregister-Event -SourceIdentifier MxStart
+          if (Test-Path "$dir\Maintenance.exe") { Write-Host "::warning title=Install test::Maintenance.exe still there after uninstall" }
+          Write-Host "::notice title=Install test passed::Install, update over the running app and uninstall ran without starting PowerShell."
+
       - uses: actions/upload-artifact@v4
         with:
           name: Maintenance-Setup
